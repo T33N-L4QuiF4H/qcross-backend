@@ -1,384 +1,215 @@
-<!doctype html>
+\<!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <title>Q~Cross</title>
 <style>
-  :root{--bg:#1a1a2e;--ink:#e9e9f3;--dim:#8a8aa3;--accent:#f5d300;
-    --cell:#0f3460;--cell-bd:#2a2a44;--tile:#fff7d6;--tile-ink:#1a1a2e}
-  *{box-sizing:border-box}
+  :root{
+    --bg:#0b0b14; --ink:#e9e9f3; --dim:#8a8aa3; --accent:#9ef01a;
+    --tile:#2a2a44; --tile-bd:#4a4a7a; --cell:#15152a; --cell-bd:#20203a;
+    --placed:#3a4a2a;
+    --nes-bg:#1a1a2e; --snes-bg:#2b1d4a;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
     font-family:ui-monospace,Menlo,Consolas,monospace;
-    -webkit-text-size-adjust:100%;overscroll-behavior:none;touch-action:manipulation}
+    -webkit-text-size-adjust:100%;overscroll-behavior:none}
   body{min-height:100dvh;display:flex;flex-direction:column}
   header{padding:10px 14px;border-bottom:1px solid #20203a;
-    display:flex;align-items:center;justify-content:space-between;gap:8px}
+    display:flex;align-items:center;justify-content:space-between}
   header h1{margin:0;font-size:16px;letter-spacing:2px}
-  header .right{display:flex;gap:6px}
-  button{font:inherit;background:#1d1d33;color:var(--ink);
-    border:1px solid #33335a;border-radius:6px;padding:8px 10px;min-height:36px;font-size:13px}
-  button.primary{background:var(--accent);color:#1a1a2e;border-color:var(--accent);font-weight:700}
-  button:disabled{opacity:.45}
+  header .meta{font-size:11px;color:var(--dim)}
   main{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px;gap:10px}
+  button{font:inherit;background:#1d1d33;color:var(--ink);
+    border:1px solid #33335a;border-radius:6px;padding:8px 12px;min-height:40px}
+  button.primary{background:var(--accent);color:#0b0b14;border-color:var(--accent);font-weight:bold}
+  button.danger{background:#5a2a2a;border-color:#7a3a3a}
   .menu{display:grid;gap:10px;max-width:340px;width:100%;margin-top:20px}
-  .menu h2{margin:8px 0 0;font-size:12px;color:var(--dim);letter-spacing:2px}
-  .status{font-size:12px;color:var(--dim);text-align:center;min-height:1em}
-  /* board */
-  .board-wrap{width:100%;max-width:560px}
-  .board{display:grid;grid-template-columns:repeat(13,1fr);gap:1px;background:#000;padding:1px;border-radius:4px}
-  .cell{aspect-ratio:1/1;background:var(--cell);display:flex;align-items:center;justify-content:center;
-    font-size:clamp(10px,2.8vw,18px);font-weight:700;cursor:pointer;user-select:none;position:relative}
-  .cell.placed{background:var(--tile);color:var(--tile-ink)}
-  .cell.sel{outline:2px solid var(--accent);outline-offset:-2px;z-index:2}
-  /* rack */
-  .rack{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;width:100%;max-width:560px;
-    padding:8px;background:#0f0f22;border:1px solid #2a2a44;border-radius:6px;min-height:54px}
-  .tile{background:var(--tile);color:var(--tile-ink);border-radius:4px;
-    width:36px;height:36px;display:flex;align-items:center;justify-content:center;
-    font-weight:700;font-size:18px;cursor:pointer;user-select:none;
-    box-shadow:0 2px 0 #b8a86a}
-  .tile.sel{outline:3px solid var(--accent);outline-offset:1px}
-  .tile.used{opacity:.25;pointer-events:none}
+  .menu h2{margin:6px 0;font-size:13px;color:var(--dim);letter-spacing:1px}
+  .status{font-size:12px;color:var(--dim);min-height:1em;text-align:center}
   .row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:100%;max-width:560px}
-  .clue-bar{width:100%;max-width:560px;background:#15152a;border:1px solid #2a2a44;
-    border-radius:6px;padding:8px;font-size:12px;min-height:32px}
-  body.skin-snes{--bg:#2b1d4a;--cell:#3a2a6b;--accent:#ffd166}
+  /* rack */
+  .rack{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;
+    padding:8px;background:#10101e;border:1px solid #20203a;border-radius:8px;
+    width:100%;max-width:560px;min-height:54px}
+  .tile{width:36px;height:36px;display:flex;align-items:center;justify-content:center;
+    background:var(--tile);border:2px solid var(--tile-bd);border-radius:5px;
+    font-size:18px;font-weight:bold;color:var(--ink);user-select:none}
+  .tile.sel{outline:3px solid var(--accent);outline-offset:1px}
+  .tile.dim{opacity:0.25}
+  /* board */
+  .board-wrap{width:100%;max-width:560px;overflow:auto}
+  .board{display:grid;gap:1px;background:#000;padding:1px;border-radius:4px;
+    grid-template-columns:repeat(13,1fr);width:100%;aspect-ratio:1/1;min-width:340px}
+  .cell{background:var(--cell);display:flex;align-items:center;justify-content:center;
+    font-size:14px;font-weight:bold;position:relative;cursor:pointer;user-select:none;
+    border:1px solid transparent}
+  .cell.has{background:var(--placed);border-color:#6a8a4a}
+  .cell.hover{outline:2px solid var(--accent);outline-offset:-2px;z-index:2}
+  /* skins */
+  body.skin-nes{--bg:var(--nes-bg);--accent:#f5d300;--placed:#0f3460}
+  body.skin-snes{--bg:var(--snes-bg);--accent:#ffd166;--placed:#3a2a6b}
+  .info{width:100%;max-width:560px;font-size:12px;color:var(--dim);
+    background:#10101e;border:1px solid #20203a;border-radius:6px;padding:8px;text-align:center}
   footer{padding:8px;font-size:10px;color:var(--dim);text-align:center}
 </style>
 </head>
 <body class="skin-nes">
 <header>
   <h1>Q~CROSS</h1>
-  <span class="right" id="modeLabel">menu</span>
+  <span class="meta" id="meta">menu</span>
 </header>
 <main id="app"><div class="status">booting…</div></main>
-<footer>backend: qcross-backend.onrender.com · ENABLE list</footer>
+<footer>backend: qcross-backend.onrender.com</footer>
 <script>
 const BACKEND = "https://qcross-backend.onrender.com";
-const $ = id => document.getElementById(id);
-const ROWS = 13, COLS = 13;
+const $ = (id) => document.getElementById(id);
+const GRID = 13;
+
+// Q-Less dice (same as backend) — used for client-side Dice Mode rolls
 const DICE = [
-  ["A","E","I","O","U","Y"],["A","C","H","O","P","S"],["A","D","E","I","N","R"],
-  ["A","D","E","I","N","R"],["B","C","D","E","F","G"],["E","H","I","N","O","T"],
-  ["E","I","K","L","O","T"],["E","I","N","Q","S","U"],["E","L","M","N","O","S"],
-  ["G","I","L","N","O","U"],["I","N","O","R","S","T"],["M","P","R","S","T","U"]
+  ["A","E","I","O","U","Y"], ["A","C","H","O","P","S"], ["A","D","E","I","N","R"],
+  ["A","D","E","I","N","R"], ["B","C","D","E","F","G"], ["E","H","I","N","O","T"],
+  ["E","I","K","L","O","T"], ["E","I","N","Q","S","U"], ["E","L","M","N","O","S"],
+  ["G","I","L","N","O","U"], ["I","N","O","R","S","T"], ["M","P","R","S","T","U"],
 ];
 
-const S = {
-  mode:"menu",        // menu | play
-  source:null,        // 'daily' | 'dice'
-  letters:[],         // 12 rolled letters (uppercase)
-  rackUsed:[],        // bool[12] — true if that rack slot is placed on board
-  grid:null,          // ROWS x COLS, each null or {ch, rackIdx}
-  selRack:null,       // index into letters[] currently selected
-  selCell:null,       // {r,c} selected on board
-  skin:"nes",
+const state = {
+  mode: "menu",           // menu | play
+  source: null,           // "daily" | "dice"
+  letters: [],            // 12 rolled letters
+  rack: [],               // {letter, used:bool} per tile (index-stable)
+  grid: null,             // 13x13 array of {letter} or null
+  selectedTile: -1,       // index into rack, or -1
+  puzzleNumber: null,
+  clues: [],
 };
 
 function setSkin(s){
-  S.skin=s;
   document.body.classList.remove("skin-nes","skin-snes");
   document.body.classList.add("skin-"+s);
+  localStorage.setItem("qx_skin", s);
+}
+(function initSkin(){ setSkin(localStorage.getItem("qx_skin") || "nes"); })();
+
+function emptyGrid(){
+  const g = [];
+  for(let r=0;r<GRID;r++){ g.push(new Array(GRID).fill(null)); }
+  return g;
 }
 
 function renderMenu(){
-  S.mode="menu"; $("modeLabel").textContent="menu";
+  state.mode = "menu";
+  $("meta").textContent = "menu";
   $("app").innerHTML = `
     <div class="menu">
       <h2>SKIN</h2>
       <div class="row">
-        <button id="bNes">NES</button>
-        <button id="bSnes">SNES</button>
+        <button id="skinNes" style="flex:1">NES</button>
+        <button id="skinSnes" style="flex:1">SNES</button>
       </div>
       <h2>PLAY</h2>
-      <button class="primary" id="bDaily">Daily Puzzle</button>
-      <button id="bDice">Dice Mode (roll 12)</button>
-      <div class="status" id="status">ready</div>
+      <button class="primary" id="playDaily">Daily Puzzle</button>
+      <button id="playDice">Dice Mode (roll your own)</button>
+      <div class="status" id="status"></div>
     </div>`;
-  $("bNes").onclick=()=>setSkin("nes");
-  $("bSnes").onclick=()=>setSkin("snes");
-  $("bDaily").onclick=startDaily;
-  $("bDice").onclick=startDice;
+  $("skinNes").onclick = () => setSkin("nes");
+  $("skinSnes").onclick = () => setSkin("snes");
+  $("playDaily").onclick = startDaily;
+  $("playDice").onclick = startDice;
 }
 
 async function startDaily(){
-  $("status").textContent="fetching daily…";
+  const s = $("status"); s.textContent = "fetching daily…";
   try{
-    const r=await fetch(`${BACKEND}/daily`,{cache:"no-store"});
+    const r = await fetch(`${BACKEND}/daily`, {cache:"no-store"});
     if(!r.ok) throw new Error("HTTP "+r.status);
-    const j=await r.json();
-    beginPlay("daily", j.letters||[]);
-  }catch(e){
-    $("status").textContent="error: "+e.message;
+    const p = await r.json();
+    state.source = "daily";
+    state.letters = p.letters.map(x=>x.toUpperCase());
+    state.puzzleNumber = p.puzzle_number;
+    state.clues = p.clues || [];
+    initPlay();
+  } catch(e){
+    s.textContent = "error: "+e.message;
   }
 }
 
 function startDice(){
-  const letters=DICE.map(d=>d[Math.floor(Math.random()*d.length)]);
-  beginPlay("dice", letters);
+  state.source = "dice";
+  state.letters = DICE.map(d => d[Math.floor(Math.random()*6)]);
+  state.puzzleNumber = null;
+  state.clues = [];
+  initPlay();
 }
 
-function beginPlay(source, letters){
-  S.mode="play"; S.source=source;
-  S.letters=letters.map(c=>c.toUpperCase());
-  S.rackUsed=new Array(12).fill(false);
-  S.grid=Array.from({length:ROWS},()=>Array(COLS).fill(null));
-  S.selRack=null; S.selCell=null;
-  $("modeLabel").textContent=source==="daily"?"daily":"dice";
+function initPlay(){
+  state.rack = state.letters.map(l => ({letter:l, used:false}));
+  state.grid = emptyGrid();
+  state.selectedTile = -1;
+  state.mode = "play";
+  $("meta").textContent = state.source==="daily" ? `Daily #${state.puzzleNumber}` : "Dice Mode";
   renderPlay();
 }
 
 function renderPlay(){
-  let h = `<div class="clue-bar" id="clueBar">${promptText()}</div>`;
-  h += `<div class="board-wrap"><div class="board" id="board">`;
-  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
-    const cell=S.grid[r][c];
-    const sel=(S.selCell&&S.selCell.r===r&&S.selCell.c===c)?" sel":"";
-    const placed=cell?" placed":"";
-    h += `<div class="cell${placed}${sel}" data-r="${r}" data-c="${c}">${cell?cell.ch:""}</div>`;
-  }
-  h += `</div></div>`;
-  h += `<div class="rack" id="rack">`;
-  S.letters.forEach((ch,i)=>{
-    const used=S.rackUsed[i]?" used":"";
-    const sel=(S.selRack===i)?" sel":"";
-    h += `<div class="tile${used}${sel}" data-i="${i}">${ch}</div>`;
-  });
-  h += `</div>`;
-  h += `<div class="row">
-    <button id="bCheck" class="primary">Check Solution</button>
-    <button id="bClear">Clear Board</button>
-    <button id="bMenu">Menu</button>
-  </div>`;
-  $("app").innerHTML=h;
-  $("board").onclick=onBoardTap;
-  $("rack").onclick=onRackTap;
-  $("bCheck").onclick=checkSolution;
-  $("bClear").onclick=()=>{ if(confirm("Clear the board?")){ beginPlay(S.source,S.letters);} };
-  $("bMenu").onclick=renderMenu;
-}
-
-function promptText(){
-  const used=S.rackUsed.filter(Boolean).length;
-  if(S.selRack!=null) return `Tap a cell to place "${S.letters[S.selRack]}". (${used}/12 placed)`;
-  if(S.selCell) return `Tap a rack tile to place at (${S.selCell.r+1},${S.selCell.c+1}), or tap a placed tile to lift. (${used}/12 placed)`;
-  return `Tap a rack tile, then a cell. Use all 12 letters in connected words ≥3 letters. (${used}/12 placed)`;
-}
-
-function onRackTap(e){
-  const t=e.target.closest(".tile"); if(!t) return;
-  const i=+t.dataset.i;
-  if(S.rackUsed[i]) return;
-  S.selRack = (S.selRack===i) ? null : i;
-  S.selCell = null;
-  renderPlay();
-}
-
-function onBoardTap(e){
-  const t=e.target.closest(".cell"); if(!t) return;
-  const r=+t.dataset.r, c=+t.dataset.c;
-  const cell=S.grid[r][c];
-  if(S.selRack!=null){
-    // place selected rack tile here (only on empty cell)
-    if(cell){ flash("Cell already has a letter"); return; }
-    S.grid[r][c] = {ch:S.letters[S.selRack], rackIdx:S.selRack};
-    S.rackUsed[S.selRack]=true;
-    S.selRack=null; S.selCell={r,c};
-  } else if(cell){
-    // lift placed tile back to rack
-    S.rackUsed[cell.rackIdx]=false;
-    S.grid[r][c]=null;
-    S
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<title>Q~Cross</title>
-<style>
-  :root{--bg:#1a1a2e;--ink:#e9e9f3;--dim:#8a8aa3;--accent:#f5d300;
-    --cell:#0f3460;--cell-bd:#2a2a44;--tile:#fff7d6;--tile-ink:#1a1a2e}
-  *{box-sizing:border-box}
-  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
-    font-family:ui-monospace,Menlo,Consolas,monospace;
-    -webkit-text-size-adjust:100%;overscroll-behavior:none;touch-action:manipulation}
-  body{min-height:100dvh;display:flex;flex-direction:column}
-  header{padding:10px 14px;border-bottom:1px solid #20203a;
-    display:flex;align-items:center;justify-content:space-between;gap:8px}
-  header h1{margin:0;font-size:16px;letter-spacing:2px}
-  header .right{display:flex;gap:6px}
-  button{font:inherit;background:#1d1d33;color:var(--ink);
-    border:1px solid #33335a;border-radius:6px;padding:8px 10px;min-height:36px;font-size:13px}
-  button.primary{background:var(--accent);color:#1a1a2e;border-color:var(--accent);font-weight:700}
-  button:disabled{opacity:.45}
-  main{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px;gap:10px}
-  .menu{display:grid;gap:10px;max-width:340px;width:100%;margin-top:20px}
-  .menu h2{margin:8px 0 0;font-size:12px;color:var(--dim);letter-spacing:2px}
-  .status{font-size:12px;color:var(--dim);text-align:center;min-height:1em}
-  /* board */
-  .board-wrap{width:100%;max-width:560px}
-  .board{display:grid;grid-template-columns:repeat(13,1fr);gap:1px;background:#000;padding:1px;border-radius:4px}
-  .cell{aspect-ratio:1/1;background:var(--cell);display:flex;align-items:center;justify-content:center;
-    font-size:clamp(10px,2.8vw,18px);font-weight:700;cursor:pointer;user-select:none;position:relative}
-  .cell.placed{background:var(--tile);color:var(--tile-ink)}
-  .cell.sel{outline:2px solid var(--accent);outline-offset:-2px;z-index:2}
-  /* rack */
-  .rack{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;width:100%;max-width:560px;
-    padding:8px;background:#0f0f22;border:1px solid #2a2a44;border-radius:6px;min-height:54px}
-  .tile{background:var(--tile);color:var(--tile-ink);border-radius:4px;
-    width:36px;height:36px;display:flex;align-items:center;justify-content:center;
-    font-weight:700;font-size:18px;cursor:pointer;user-select:none;
-    box-shadow:0 2px 0 #b8a86a}
-  .tile.sel{outline:3px solid var(--accent);outline-offset:1px}
-  .tile.used{opacity:.25;pointer-events:none}
-  .row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:100%;max-width:560px}
-  .clue-bar{width:100%;max-width:560px;background:#15152a;border:1px solid #2a2a44;
-    border-radius:6px;padding:8px;font-size:12px;min-height:32px}
-  body.skin-snes{--bg:#2b1d4a;--cell:#3a2a6b;--accent:#ffd166}
-  footer{padding:8px;font-size:10px;color:var(--dim);text-align:center}
-</style>
-</head>
-<body class="skin-nes">
-<header>
-  <h1>Q~CROSS</h1>
-  <span class="right" id="modeLabel">menu</span>
-</header>
-<main id="app"><div class="status">booting…</div></main>
-<footer>backend: qcross-backend.onrender.com · ENABLE list</footer>
-<script>
-const BACKEND = "https://qcross-backend.onrender.com";
-const $ = id => document.getElementById(id);
-const ROWS = 13, COLS = 13;
-const DICE = [
-  ["A","E","I","O","U","Y"],["A","C","H","O","P","S"],["A","D","E","I","N","R"],
-  ["A","D","E","I","N","R"],["B","C","D","E","F","G"],["E","H","I","N","O","T"],
-  ["E","I","K","L","O","T"],["E","I","N","Q","S","U"],["E","L","M","N","O","S"],
-  ["G","I","L","N","O","U"],["I","N","O","R","S","T"],["M","P","R","S","T","U"]
-];
-
-const S = {
-  mode:"menu",        // menu | play
-  source:null,        // 'daily' | 'dice'
-  letters:[],         // 12 rolled letters (uppercase)
-  rackUsed:[],        // bool[12] — true if that rack slot is placed on board
-  grid:null,          // ROWS x COLS, each null or {ch, rackIdx}
-  selRack:null,       // index into letters[] currently selected
-  selCell:null,       // {r,c} selected on board
-  skin:"nes",
-};
-
-function setSkin(s){
-  S.skin=s;
-  document.body.classList.remove("skin-nes","skin-snes");
-  document.body.classList.add("skin-"+s);
-}
-
-function renderMenu(){
-  S.mode="menu"; $("modeLabel").textContent="menu";
+  const placed = countPlaced();
   $("app").innerHTML = `
-    <div class="menu">
-      <h2>SKIN</h2>
-      <div class="row">
-        <button id="bNes">NES</button>
-        <button id="bSnes">SNES</button>
-      </div>
-      <h2>PLAY</h2>
-      <button class="primary" id="bDaily">Daily Puzzle</button>
-      <button id="bDice">Dice Mode (roll 12)</button>
-      <div class="status" id="status">ready</div>
-    </div>`;
-  $("bNes").onclick=()=>setSkin("nes");
-  $("bSnes").onclick=()=>setSkin("snes");
-  $("bDaily").onclick=startDaily;
-  $("bDice").onclick=startDice;
+    <div class="row">
+      <button id="menuBtn">≡ Menu</button>
+      <button id="rollBtn" ${state.source==="daily"?"disabled":""}>🎲 Reroll</button>
+      <button id="clearBtn">Clear Board</button>
+      <button class="primary" id="checkBtn">Check (${placed}/12)</button>
+    </div>
+    <div class="rack" id="rack"></div>
+    <div class="info" id="info">Tap a letter, then tap a cell. Tap a placed tile to lift it back.</div>
+    <div class="board-wrap"><div class="board" id="board"></div></div>
+  `;
+  $("menuBtn").onclick = () => { if(confirm("Return to menu? Your board will be lost.")) renderMenu(); };
+  $("rollBtn").onclick = () => { if(confirm("Reroll dice? Your board will be lost.")) startDice(); };
+  $("clearBtn").onclick = clearBoard;
+  $("checkBtn").onclick = checkSolution;
+  renderRack();
+  renderBoard();
 }
 
-async function startDaily(){
-  $("status").textContent="fetching daily…";
-  try{
-    const r=await fetch(`${BACKEND}/daily`,{cache:"no-store"});
-    if(!r.ok) throw new Error("HTTP "+r.status);
-    const j=await r.json();
-    beginPlay("daily", j.letters||[]);
-  }catch(e){
-    $("status").textContent="error: "+e.message;
-  }
-}
-
-function startDice(){
-  const letters=DICE.map(d=>d[Math.floor(Math.random()*d.length)]);
-  beginPlay("dice", letters);
-}
-
-function beginPlay(source, letters){
-  S.mode="play"; S.source=source;
-  S.letters=letters.map(c=>c.toUpperCase());
-  S.rackUsed=new Array(12).fill(false);
-  S.grid=Array.from({length:ROWS},()=>Array(COLS).fill(null));
-  S.selRack=null; S.selCell=null;
-  $("modeLabel").textContent=source==="daily"?"daily":"dice";
-  renderPlay();
-}
-
-function renderPlay(){
-  let h = `<div class="clue-bar" id="clueBar">${promptText()}</div>`;
-  h += `<div class="board-wrap"><div class="board" id="board">`;
-  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
-    const cell=S.grid[r][c];
-    const sel=(S.selCell&&S.selCell.r===r&&S.selCell.c===c)?" sel":"";
-    const placed=cell?" placed":"";
-    h += `<div class="cell${placed}${sel}" data-r="${r}" data-c="${c}">${cell?cell.ch:""}</div>`;
-  }
-  h += `</div></div>`;
-  h += `<div class="rack" id="rack">`;
-  S.letters.forEach((ch,i)=>{
-    const used=S.rackUsed[i]?" used":"";
-    const sel=(S.selRack===i)?" sel":"";
-    h += `<div class="tile${used}${sel}" data-i="${i}">${ch}</div>`;
+function renderRack(){
+  const el = $("rack");
+  el.innerHTML = "";
+  state.rack.forEach((t, i) => {
+    const d = document.createElement("div");
+    d.className = "tile" + (t.used?" dim":"") + (state.selectedTile===i?" sel":"");
+    d.textContent = t.letter;
+    d.onclick = () => {
+      if(t.used) return;
+      state.selectedTile = (state.selectedTile===i) ? -1 : i;
+      renderRack();
+    };
+    el.appendChild(d);
   });
-  h += `</div>`;
-  h += `<div class="row">
-    <button id="bCheck" class="primary">Check Solution</button>
-    <button id="bClear">Clear Board</button>
-    <button id="bMenu">Menu</button>
-  </div>`;
-  $("app").innerHTML=h;
-  $("board").onclick=onBoardTap;
-  $("rack").onclick=onRackTap;
-  $("bCheck").onclick=checkSolution;
-  $("bClear").onclick=()=>{ if(confirm("Clear the board?")){ beginPlay(S.source,S.letters);} };
-  $("bMenu").onclick=renderMenu;
 }
 
-function promptText(){
-  const used=S.rackUsed.filter(Boolean).length;
-  if(S.selRack!=null) return `Tap a cell to place "${S.letters[S.selRack]}". (${used}/12 placed)`;
-  if(S.selCell) return `Tap a rack tile to place at (${S.selCell.r+1},${S.selCell.c+1}), or tap a placed tile to lift. (${used}/12 placed)`;
-  return `Tap a rack tile, then a cell. Use all 12 letters in connected words ≥3 letters. (${used}/12 placed)`;
+function renderBoard(){
+  const el = $("board");
+  el.innerHTML = "";
+  for(let r=0;r<GRID;r++){
+    for(let c=0;c<GRID;c++){
+      const cell = state.grid[r][c];
+      const d = document.createElement("div");
+      d.className = "cell" + (cell?" has":"");
+      d.textContent = cell ? cell.letter : "";
+      d.onclick = () => onCellTap(r,c);
+      el.appendChild(d);
+    }
+  }
 }
 
-function onRackTap(e){
-  const t=e.target.closest(".tile"); if(!t) return;
-  const i=+t.dataset.i;
-  if(S.rackUsed[i]) return;
-  S.selRack = (S.selRack===i) ? null : i;
-  S.selCell = null;
-  renderPlay();
-}
-
-function onBoardTap(e){
-  const t=e.target.closest(".cell"); if(!t) return;
-  const r=+t.dataset.r, c=+t.dataset.c;
-  const cell=S.grid[r][c];
-  if(S.selRack!=null){
-    // place selected rack tile here (only on empty cell)
-    if(cell){ flash("Cell already has a letter"); return; }
-    S.grid[r][c] = {ch:S.letters[S.selRack], rackIdx:S.selRack};
-    S.rackUsed[S.selRack]=true;
-    S.selRack=null; S.selCell={r,c};
-  } else if(cell){
-    // lift placed tile back to rack
-    S.rackUsed[cell.rackIdx]=false;
-    S.grid[r][c]=null;
-    S
+function onCellTap(r,c){
+  const cell = state.grid[r][c];
+  if(cell){
+    // lift back to rack
+    state.rack[cell.tileIdx].used = false;
+    state.grid[r][c] = null;
+    state.selectedTile = -1;
+    renderRack(); renderBo
