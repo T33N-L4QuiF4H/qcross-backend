@@ -22,23 +22,21 @@
   header .meta{font-size:11px;color:var(--dim)}
   main{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px;gap:10px}
   button{font:inherit;background:#1d1d33;color:var(--ink);
-    border:1px solid #33335a;border-radius:6px;padding:8px 12px;min-height:40px}
+    border:1px solid #33335a;border-radius:6px;padding:8px 12px;min-height:40px;cursor:pointer}
   button.primary{background:var(--accent);color:#0b0b14;border-color:var(--accent);font-weight:bold}
   button.danger{background:#5a2a2a;border-color:#7a3a3a}
   .menu{display:grid;gap:10px;max-width:340px;width:100%;margin-top:20px}
   .menu h2{margin:6px 0;font-size:13px;color:var(--dim);letter-spacing:1px}
   .status{font-size:12px;color:var(--dim);min-height:1em;text-align:center}
   .row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:100%;max-width:560px}
-  /* rack */
   .rack{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;
     padding:8px;background:#10101e;border:1px solid #20203a;border-radius:8px;
     width:100%;max-width:560px;min-height:54px}
   .tile{width:36px;height:36px;display:flex;align-items:center;justify-content:center;
     background:var(--tile);border:2px solid var(--tile-bd);border-radius:5px;
-    font-size:18px;font-weight:bold;color:var(--ink);user-select:none}
+    font-size:18px;font-weight:bold;color:var(--ink);user-select:none;cursor:pointer}
   .tile.sel{outline:3px solid var(--accent);outline-offset:1px}
   .tile.dim{opacity:0.25}
-  /* board */
   .board-wrap{width:100%;max-width:560px;overflow:auto}
   .board{display:grid;gap:1px;background:#000;padding:1px;border-radius:4px;
     grid-template-columns:repeat(13,1fr);width:100%;aspect-ratio:1/1;min-width:340px}
@@ -46,8 +44,6 @@
     font-size:14px;font-weight:bold;position:relative;cursor:pointer;user-select:none;
     border:1px solid transparent}
   .cell.has{background:var(--placed);border-color:#6a8a4a}
-  .cell.hover{outline:2px solid var(--accent);outline-offset:-2px;z-index:2}
-  /* skins */
   body.skin-nes{--bg:var(--nes-bg);--accent:#f5d300;--placed:#0f3460}
   body.skin-snes{--bg:var(--snes-bg);--accent:#ffd166;--placed:#3a2a6b}
   .info{width:100%;max-width:560px;font-size:12px;color:var(--dim);
@@ -67,7 +63,6 @@ const BACKEND = "https://qcross-backend.onrender.com";
 const $ = (id) => document.getElementById(id);
 const GRID = 13;
 
-// Q-Less dice (same as backend) — used for client-side Dice Mode rolls
 const DICE = [
   ["A","E","I","O","U","Y"], ["A","C","H","O","P","S"], ["A","D","E","I","N","R"],
   ["A","D","E","I","N","R"], ["B","C","D","E","F","G"], ["E","H","I","N","O","T"],
@@ -76,32 +71,33 @@ const DICE = [
 ];
 
 const state = {
-  mode: "menu",           // menu | play
-  source: null,           // "daily" | "dice"
-  letters: [],            // 12 rolled letters
-  rack: [],               // {letter, used:bool} per tile (index-stable)
-  grid: null,             // 13x13 array of {letter} or null
-  selectedTile: -1,       // index into rack, or -1
-  puzzleNumber: null,
-  clues: [],
+  mode:"menu", source:null, letters:[], rack:[], grid:null,
+  selectedTile:-1, puzzleNumber:null, clues:[]
 };
 
 function setSkin(s){
   document.body.classList.remove("skin-nes","skin-snes");
   document.body.classList.add("skin-"+s);
-  localStorage.setItem("qx_skin", s);
+  try{ localStorage.setItem("qx_skin", s); }catch(e){}
 }
-(function initSkin(){ setSkin(localStorage.getItem("qx_skin") || "nes"); })();
+(function initSkin(){
+  let s = "nes";
+  try{ s = localStorage.getItem("qx_skin") || "nes"; }catch(e){}
+  setSkin(s);
+})();
 
 function emptyGrid(){
-  const g = [];
-  for(let r=0;r<GRID;r++){ g.push(new Array(GRID).fill(null)); }
+  const g=[]; for(let r=0;r<GRID;r++) g.push(new Array(GRID).fill(null));
   return g;
+}
+function countPlaced(){
+  let n=0; for(let r=0;r<GRID;r++) for(let c=0;c<GRID;c++) if(state.grid[r][c]) n++;
+  return n;
 }
 
 function renderMenu(){
-  state.mode = "menu";
-  $("meta").textContent = "menu";
+  state.mode="menu";
+  $("meta").textContent="menu";
   $("app").innerHTML = `
     <div class="menu">
       <h2>SKIN</h2>
@@ -114,102 +110,195 @@ function renderMenu(){
       <button id="playDice">Dice Mode (roll your own)</button>
       <div class="status" id="status"></div>
     </div>`;
-  $("skinNes").onclick = () => setSkin("nes");
-  $("skinSnes").onclick = () => setSkin("snes");
-  $("playDaily").onclick = startDaily;
-  $("playDice").onclick = startDice;
+  $("skinNes").onclick=()=>setSkin("nes");
+  $("skinSnes").onclick=()=>setSkin("snes");
+  $("playDaily").onclick=startDaily;
+  $("playDice").onclick=startDice;
 }
 
 async function startDaily(){
-  const s = $("status"); s.textContent = "fetching daily…";
+  const s=$("status"); s.textContent="fetching daily…";
   try{
-    const r = await fetch(`${BACKEND}/daily`, {cache:"no-store"});
+    const r=await fetch(`${BACKEND}/daily`,{cache:"no-store"});
     if(!r.ok) throw new Error("HTTP "+r.status);
-    const p = await r.json();
-    state.source = "daily";
-    state.letters = p.letters.map(x=>x.toUpperCase());
-    state.puzzleNumber = p.puzzle_number;
-    state.clues = p.clues || [];
+    const p=await r.json();
+    state.source="daily";
+    state.letters=p.letters.map(x=>x.toUpperCase());
+    state.puzzleNumber=p.puzzle_number;
+    state.clues=p.clues||[];
     initPlay();
-  } catch(e){
-    s.textContent = "error: "+e.message;
-  }
+  }catch(e){ s.textContent="error: "+e.message; }
 }
 
 function startDice(){
-  state.source = "dice";
-  state.letters = DICE.map(d => d[Math.floor(Math.random()*6)]);
-  state.puzzleNumber = null;
-  state.clues = [];
+  state.source="dice";
+  state.letters=DICE.map(d=>d[Math.floor(Math.random()*6)]);
+  state.puzzleNumber=null; state.clues=[];
   initPlay();
 }
 
 function initPlay(){
-  state.rack = state.letters.map(l => ({letter:l, used:false}));
-  state.grid = emptyGrid();
-  state.selectedTile = -1;
-  state.mode = "play";
+  state.rack=state.letters.map(l=>({letter:l,used:false}));
+  state.grid=emptyGrid();
+  state.selectedTile=-1;
+  state.mode="play";
   $("meta").textContent = state.source==="daily" ? `Daily #${state.puzzleNumber}` : "Dice Mode";
   renderPlay();
 }
 
 function renderPlay(){
-  const placed = countPlaced();
+  const placed=countPlaced();
   $("app").innerHTML = `
     <div class="row">
       <button id="menuBtn">≡ Menu</button>
       <button id="rollBtn" ${state.source==="daily"?"disabled":""}>🎲 Reroll</button>
-      <button id="clearBtn">Clear Board</button>
+      <button id="clearBtn">Clear</button>
       <button class="primary" id="checkBtn">Check (${placed}/12)</button>
     </div>
     <div class="rack" id="rack"></div>
-    <div class="info" id="info">Tap a letter, then tap a cell. Tap a placed tile to lift it back.</div>
+    <div class="info">Tap a letter, then tap a cell. Tap a placed tile to lift it back.</div>
     <div class="board-wrap"><div class="board" id="board"></div></div>
+    <div class="status" id="status"></div>
   `;
-  $("menuBtn").onclick = () => { if(confirm("Return to menu? Your board will be lost.")) renderMenu(); };
-  $("rollBtn").onclick = () => { if(confirm("Reroll dice? Your board will be lost.")) startDice(); };
-  $("clearBtn").onclick = clearBoard;
-  $("checkBtn").onclick = checkSolution;
-  renderRack();
-  renderBoard();
+  $("menuBtn").onclick=()=>{ if(confirm("Return to menu? Board will be lost.")) renderMenu(); };
+  $("rollBtn").onclick=()=>{ if(confirm("Reroll? Board will be lost.")) startDice(); };
+  $("clearBtn").onclick=clearBoard;
+  $("checkBtn").onclick=checkSolution;
+  renderRack(); renderBoard();
 }
 
 function renderRack(){
-  const el = $("rack");
-  el.innerHTML = "";
-  state.rack.forEach((t, i) => {
-    const d = document.createElement("div");
-    d.className = "tile" + (t.used?" dim":"") + (state.selectedTile===i?" sel":"");
-    d.textContent = t.letter;
-    d.onclick = () => {
-      if(t.used) return;
-      state.selectedTile = (state.selectedTile===i) ? -1 : i;
-      renderRack();
-    };
+  const el=$("rack"); el.innerHTML="";
+  state.rack.forEach((t,i)=>{
+    const d=document.createElement("div");
+    d.className="tile"+(t.used?" dim":"")+(state.selectedTile===i?" sel":"");
+    d.textContent=t.letter;
+    d.onclick=()=>{ if(t.used)return; state.selectedTile=(state.selectedTile===i)?-1:i; renderRack(); };
     el.appendChild(d);
   });
 }
 
 function renderBoard(){
-  const el = $("board");
-  el.innerHTML = "";
-  for(let r=0;r<GRID;r++){
-    for(let c=0;c<GRID;c++){
-      const cell = state.grid[r][c];
-      const d = document.createElement("div");
-      d.className = "cell" + (cell?" has":"");
-      d.textContent = cell ? cell.letter : "";
-      d.onclick = () => onCellTap(r,c);
-      el.appendChild(d);
-    }
+  const el=$("board"); el.innerHTML="";
+  for(let r=0;r<GRID;r++) for(let c=0;c<GRID;c++){
+    const cell=state.grid[r][c];
+    const d=document.createElement("div");
+    d.className="cell"+(cell?" has":"");
+    d.textContent=cell?cell.letter:"";
+    d.onclick=()=>onCellTap(r,c);
+    el.appendChild(d);
   }
 }
 
 function onCellTap(r,c){
-  const cell = state.grid[r][c];
+  const cell=state.grid[r][c];
   if(cell){
-    // lift back to rack
-    state.rack[cell.tileIdx].used = false;
-    state.grid[r][c] = null;
-    state.selectedTile = -1;
-    renderRack(); renderBo
+    state.rack[cell.tileIdx].used=false;
+    state.grid[r][c]=null;
+    state.selectedTile=-1;
+    renderRack(); renderBoard(); updateCount();
+    return;
+  }
+  if(state.selectedTile<0) return;
+    const i=state.selectedTile;
+  if(i<0) return;
+  if(state.rack[i].used) return;
+  state.grid[r][c]={letter:state.rack[i].letter, tileIdx:i};
+  state.rack[i].used=true;
+  state.selectedTile=-1;
+  renderRack();
+  renderBoard();
+}
+
+function countPlaced(){
+  let n=0;
+  for(let r=0;r<GRID;r++) for(let c=0;c<GRID;c++) if(state.grid[r][c]) n++;
+  return n;
+}
+
+function clearBoard(){
+  if(!confirm("Clear the board?")) return;
+  state.grid = emptyGrid();
+  state.rack.forEach(t => t.used=false);
+  state.selectedTile=-1;
+  renderRack();
+  renderBoard();
+}
+
+function extractWords(){
+  const words=[];
+  // rows
+  for(let r=0;r<GRID;r++){
+    let w="", sc=-1;
+    for(let c=0;c<GRID;c++){
+      const cell=state.grid[r][c];
+      if(cell){ if(!w) sc=c; w+=cell.letter; }
+      else { if(w.length>=2) words.push({word:w, r, c:sc, dir:"H"}); w=""; }
+    }
+    if(w.length>=2) words.push({word:w, r, c:sc, dir:"H"});
+  }
+  // cols
+  for(let c=0;c<GRID;c++){
+    let w="", sr=-1;
+    for(let r=0;r<GRID;r++){
+      const cell=state.grid[r][c];
+      if(cell){ if(!w) sr=r; w+=cell.letter; }
+      else { if(w.length>=2) words.push({word:w, r:sr, c, dir:"V"}); w=""; }
+    }
+    if(w.length>=2) words.push({word:w, r:sr, c, dir:"V"});
+  }
+  return words;
+}
+
+function isConnected(){
+  // BFS over placed cells; all must form one connected group
+  const cells=[];
+  for(let r=0;r<GRID;r++) for(let c=0;c<GRID;c++) if(state.grid[r][c]) cells.push([r,c]);
+  if(cells.length===0) return false;
+  const seen=new Set();
+  const key=(r,c)=>r+","+c;
+  const q=[cells[0]]; seen.add(key(cells[0][0],cells[0][1]));
+  while(q.length){
+    const [r,c]=q.shift();
+    [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dr,dc])=>{
+      const nr=r+dr, nc=c+dc;
+      if(nr<0||nr>=GRID||nc<0||nc>=GRID) return;
+      if(!state.grid[nr][nc]) return;
+      const k=key(nr,nc);
+      if(seen.has(k)) return;
+      seen.add(k); q.push([nr,nc]);
+    });
+  }
+  return seen.size===cells.length;
+}
+
+async function checkSolution(){
+  const placed=countPlaced();
+  const s=$("info");
+  if(placed<12){ s.textContent=`Place all 12 tiles (${placed}/12).`; return; }
+  if(!isConnected()){ s.textContent="All tiles must be connected."; return; }
+  const ws=extractWords();
+  if(ws.some(w=>w.word.length<3)){ s.textContent="All words must be 3+ letters."; return; }
+  const words=ws.map(w=>w.word);
+  s.textContent="checking…";
+  try{
+    const r=await fetch(`${BACKEND}/validate`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({words})
+    });
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    const data=await r.json();
+    if(data.valid){ s.textContent="✅ SOLVED! All "+words.length+" words valid."; }
+    else { s.textContent="❌ Invalid: "+(data.invalid||[]).join(", "); }
+  } catch(e){
+    // offline fallback
+    s.textContent="Words formed: "+words.join(", ")+" (couldn't reach /validate: "+e.message+")";
+  }
+}
+
+// boot
+renderMenu();
+</script>
+</body>
+</html>
