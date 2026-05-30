@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Q~Cross</title>
+<style>
+  :root{
+    --bg:#0b0b14; --ink:#e9e9f3; --dim:#8a8aa3; --accent:#9ef01a;
+    --cell:#15152a; --cell-bd:#2a2a44; --black:#000;
+    --nes-bg:#1a1a2e; --snes-bg:#2b1d4a;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    -webkit-text-size-adjust:100%;overscroll-behavior:none}
+  body{min-height:100dvh;display:flex;flex-direction:column}
+  header{padding:14px 16px;border-bottom:1px solid #20203a;
+    display:flex;align-items:center;justify-content:space-between}
+  header h1{margin:0;font-size:18px;letter-spacing:2px}
+  header .mode{font-size:12px;color:var(--dim)}
+  main{flex:1;display:flex;flex-direction:column;align-items:center;
+    padding:14px;gap:14px}
+  button{font:inherit;background:#1d1d33;color:var(--ink);
+    border:1px solid #33335a;border-radius:8px;padding:10px 14px;
+    min-height:44px}
+  button.primary{background:var(--accent);color:#0b0b14;border-color:var(--accent)}
+  button:active{transform:translateY(1px)}
+  .menu{display:grid;gap:10px;max-width:360px;width:100%;margin-top:8px}
+  .menu h2{margin:6px 0;font-size:14px;color:var(--dim);letter-spacing:1px}
+  .status{font-size:12px;color:var(--dim);min-height:1em}
+  /* board */
+  .board-wrap{width:100%;max-width:520px}
+  .board{display:grid;gap:2px;background:#000;padding:2px;border-radius:6px}
+  .cell{aspect-ratio:1/1;background:var(--cell);
+    display:flex;align-items:center;justify-content:center;
+    font-size:clamp(14px,4.5vw,22px);position:relative;user-select:none}
+  .cell.black{background:#000}
+  .cell.sel{outline:2px solid var(--accent);outline-offset:-2px;z-index:2}
+  .cell .num{position:absolute;top:1px;left:2px;font-size:9px;color:var(--dim)}
+  /* skins */
+  body.skin-nes{--bg:var(--nes-bg);--cell:#0f3460;--cell-bd:#e94560;--accent:#f5d300}
+  body.skin-snes{--bg:var(--snes-bg);--cell:#3a2a6b;--cell-bd:#a48cf2;--accent:#ffd166}
+  .clue-bar{width:100%;max-width:520px;background:#15152a;border:1px solid #2a2a44;
+    border-radius:8px;padding:10px;font-size:14px;min-height:48px}
+  .kb{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;width:100%;max-width:520px}
+  .kb button{padding:10px 0;min-height:42px;font-size:16px}
+  footer{padding:10px;font-size:11px;color:var(--dim);text-align:center}
+</style>
+</head>
+<body class="skin-nes">
+<header>
+  <h1>Q~CROSS</h1>
+  <span class="mode" id="modeLabel">menu</span>
+</header>
+<main id="app">
+  <div class="status" id="status">loading…</div>
+</main>
+<footer>backend: <span id="be">qcross-backend.onrender.com</span></footer>
+<script>
+(() => {
+  const BACKEND = "https://qcross-backend.onrender.com";
+  const $ = (id) => document.getElementById(id);
+  const app = $("app"), status = $("status"), modeLabel = $("modeLabel");
+
+  const state = {
+    skin: "nes",          // "nes" | "snes"
+    puzzle: null,         // {rows,cols,grid,clues:{across:[],down:[]},answers}
+    cursor: {r:0,c:0,dir:"A"}, // A=across, D=down
+    entries: {},          // "r,c" -> letter
+    mode: "menu",
+  };
+
+  // ---------- networking ----------
+  async function getDaily(){
+    status.textContent = "fetching daily puzzle…";
+    const r = await fetch(`${BACKEND}/daily`, {cache:"no-store"});
+    if(!r.ok) throw new Error("daily fetch failed: "+r.status);
+    return r.json();
+  }
+
+  // ---------- rendering ----------
+  function renderMenu(){
+    state.mode = "menu"; modeLabel.textContent = "menu";
+    app.innerHTML = `
+      <div class="menu">
+        <h2>SKIN</h2>
+        <button id="skinNes">NES</button>
+        <button id="skinSnes">SNES</button>
+        <h2>PLAY</h2>
+        <button class="primary" id="playDaily">Daily Puzzle</button>
+        <button id="playDice">Dice Mode (coming)</button>
+        <div class="status" id="status">ready</div>
+      </div>`;
+    $("skinNes").onclick = () => setSkin("nes");
+    $("skinSnes").onclick = () => setSkin("snes");
+    $("playDaily").onclick = loadDaily;
+    $("playDice").onclick = () => { $("status").textContent = "dice mode TBD"; };
+  }
+
+  function setSkin(s){
+    state.skin = s;
+    document.body.classList.remove("skin-nes","skin-snes");
+    document.body.classList.add("skin-"+s);
+  }
+
+  async function loadDaily(){
+    try{
+      const p = await getDaily();
+      state.puzzle = normalize(p);
+      state.entries = {};
+      state.cursor = firstOpen(state.puzzle);
+      renderBoard();
+    } catch(e){
+      status.textContent = "error: " + e.message;
+    }
+  }
+
+  function normalize(p){
+    // Tolerate a few backend shapes; expect grid as 2D array of "." (black) or "" / letter
+    const grid = p.grid || p.board || p.cells;
+    const rows = grid.length, cols = grid[0].length;
+    return {
+      rows, cols, grid,
+      clues: p.clues || {across:[],down:[]},
+      answers: p.answers || null,
+      title: p.title || "Daily"
+    };
+  }
+
+  function firstOpen(p){
+    for(let r=0;r<p.rows;r++) for(let c=0;c<p.cols;c++)
+      if(p.grid[r][c] !== "." && p.grid[r][c] !== "#") return {r,c,dir:"A"};
+    return {r:0,c:0,dir:"A"};
+  }
+</script>
+<script>
+(() => {
+  // continuation of previous IIFE scope via globals on window for simplicity
+  const BACKEND = "https://qcross-backend.onrender.com";
+  const $ = (id) => document.getElementById(id);
+
+  function isBlack(p,r,c){ const v=p.grid[r][c]; return v==="." || v==="#"; }
+
+  function numberGrid(p){
+    // Compute crossword numbering: a cell is numbered if it starts an across or down word.
+    const nums = Array.from({length:p.rows},()=>Array(p.cols).fill(0));
+    let n = 1;
+    for(let r=0;r<p.rows;r++){
+      for(let c=0;c<p.cols;c++){
+        if(isBlack(p,r,c)) continue;
+        const startA = (c===0 || isBlack(p,r,c-1)) && (c+1<p.cols && !isBlack(p,r,c+1));
+        const startD = (r===0 || isBlack(p,r-1,c)) && (r+1<p.rows && !isBlack(p,r+1,c));
+        if(startA || startD){ nums[r][c] = n++; }
+      }
+    }
+    return nums;
+  }
+
+  function renderBoard(){
+    const s = window.__qx;
+    const p = s.puzzle;
+    s.numbers = numberGrid(p);
+    const sizePct = 100;
+    const boardStyle = `grid-template-columns:repeat(${p.cols},1fr);`;
+    let html = `
+      <div class="clue-bar" id="clueBar">tap a cell to start</div>
+      <div class="board-wrap"><div class="board" id="board" style="${boardStyle}">`;
+    for(let r=0;r<p.rows;r++){
+      for(let c=0;c<p.cols;c++){
+        const black = isBlack(p,r,c);
+        const sel = (s.cursor.r===r && s.cursor.c===c) ? " sel" : "";
+        const num = s.numbers[r][c] || "";
+        const letter = s.entries[`${r},${c}`] || (typeof p.grid[r][c]==="string" && p.grid[r][c].length===1 && !black ? "" : "");
+        html += `<div class="cell${black?" black":""}${sel}" data-r="${r}" data-c="${c}">`;
+        if(!black){
+          if(num) html += `<span class="num">${num}</span>`;
+          html += `<span class="ltr">${letter}</span>`;
+        }
+        html += `</div>`;
+      }
+    }
+    html += `</div></div>`;
+    // Onscreen keyboard
+    html += `<div class="kb" id="kb">`;
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").forEach(ch=>{
+      html += `<button data-k="${ch}">${ch}</button>`;
+    });
+    html += `<button data-k="DIR">↻</button><button data-k="DEL">⌫</button><button data-k="MENU">≡</button><button data-k="CHK">✓</button>`;
+    html += `</div>`;
+    app.innerHTML = html;
+
+    $("board").addEventListener("click", (e)=>{
+      const t = e.target.closest(".cell"); if(!t) return;
+      const r=+t.dataset.r,c=+t.dataset.c;
+      if(isBlack(p,r,c)) return;
+      if(s.cursor.r===r && s.cursor.c===c) s.cursor.dir = s.cursor.dir==="A"?"D":"A";
+      else { s.cursor.r=r; s.cursor.c=c; }
+      renderBoard(); updateClue();
+    });
+    $("kb").addEventListener("click",(e)=>{
+      const b = e.target.closest("button"); if(!b) return;
+      const k = b.dataset.k;
+      if(k==="MENU") return renderMenu();
+      if(k==="DIR"){ s.cursor.dir = s.cursor.dir==="A"?"D":"A"; return renderBoard(); }
+      if(k==="DEL"){ delete s.entries[`${s.cursor.r},${s.cursor.c}`]; return renderBoard(); }
+      if(k==="CHK"){ return check(); }
+      typeLetter(k);
+    });
+    updateClue();
+  }
+
+  function typeLetter(ch){
+    const s = window.__qx, p = s.puzzle;
+    s.entries[`${s.cursor.r},${s.cursor.c}`] = ch;
+    advance();
+    renderBoard();
+  }
+  function advance(){
+    const s = window.__qx, p = s.puzzle;
+    let {r,c,dir} = s.cursor;
+    if(dir==="A") c++; else r++;
+    if(r<p.rows && c<p.cols && !isBlack(p,r,c)){ s.cursor.r=r; s.cursor.c=c; }
+  }
+  function updateClue(){
+    const s = window.__qx, p = s.puzzle;
+    const cb = $("clueBar"); if(!cb) return;
+    cb.textContent = `${s.cursor.dir==="A"?"Across":"Down"} @ (${s.cursor.r+1},${s.cursor.c+1})`;
+  }
+  function check(){
+    const s = window.__qx, p = s.puzzle;
+    if(!p.answers){ $("clueBar").textContent="no answer key from backend"; return; }
+    let wrong = 0, total=0;
+    for(let r=0;r<p.rows;r++) for(let c=0;c<p.cols;c++){
+      if(isBlack(p,r,c)) continue;
+      total++;
+      const ans = (p.answers[r]&&p.answers[r][c])||"";
+      if((s.entries[`${r},${c}`]||"") !== ans) wrong++;
+    }
+    $("clueBar").textContent = wrong===0 ? "✓ solved!" : `${total-wrong}/${total} correct`;
+  }
+
+  // expose
+  window.__qx = { skin:"nes", puzzle:null, cursor:{r:0,c:0,dir:"A"}, entries:{}, numbers:null };
+  window.renderBoard = renderBoard;
+  window.renderMenu = renderMenu;
+  window.app = document.getElementById("app");
+
+  // boot
+  (function boot(){
+    const s = window.__qx;
+    document.body.classList.add("skin-nes");
+    renderMenu();
+  })();
+})();
+</script>
+</body>
+</html>
