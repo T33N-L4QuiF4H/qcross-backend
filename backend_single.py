@@ -8,7 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI(title="Q~Cross API")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://t33n-l4quif4h.github.io"],
+allow_origins=["*"],
+
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
