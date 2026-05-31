@@ -2,132 +2,164 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>Q~Cross</title>
 <style>
 /* ═══════════════════════════════════════════════
-   Q~CROSS  —  NES / SNES RETRO THEME
+   Q~CROSS — NES / SNES RETRO THEME (refactor v2)
+   Locked constraints:
+     - Board is always 12×12
+     - Dice are beige Q~Cross style (not blue, not bars, not pips)
+     - Tiles populate immediately on game start
+     - NES/SNES switchable any time
    ═══════════════════════════════════════════════ */
-
-/* Google Fonts for pixel look */
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-/* ── BASE ─────────────────────────────────────── */
-:root {
+:root{
   --ink:#e8eef7; --muted:#8899aa; --border:rgba(255,255,255,.12);
   --good:#2ee6a6; --danger:#ff5d7a; --accent:#7c5cff;
-  /* NES palette */
   --nes-bg:#0a0a1a; --nes-panel:#111128; --nes-tile:#f0f0f0;
   --nes-tile2:#c8c8d8; --nes-border:#3344aa; --nes-hi:#ffdd00;
   --nes-btn:#222244; --nes-btn-hi:#4455cc;
-  /* SNES palette */
   --snes-bg:#1a0a2e; --snes-panel:#2a1040; --snes-tile:#fff3cc;
   --snes-tile2:#c8a85a; --snes-border:#cc44ff; --snes-hi:#ffaa00;
   --snes-btn:#3a1060; --snes-btn-hi:#8833cc;
 }
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;}
+body{color:var(--ink);min-height:100vh;overscroll-behavior:none;}
+.die,.cell{image-rendering:pixelated;}
 
-* { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-
-body {
-  margin:0; color:var(--ink); min-height:100vh;
-  image-rendering:pixelated;
-}
-
-/* ── NES BODY ─────────────────────────────────── */
-body.nes {
-  background: var(--nes-bg);
+/* ── NES ─────────────────────────────────── */
+body.nes{
+  background:var(--nes-bg);
   background-image:
-    linear-gradient(rgba(30,40,120,.4) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(30,40,120,.4) 1px, transparent 1px);
-  background-size: 32px 32px;
-  font-family: 'Press Start 2P', ui-monospace, monospace;
+    linear-gradient(rgba(30,40,120,.4) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(30,40,120,.4) 1px,transparent 1px);
+  background-size:32px 32px;
+  font-family:'Press Start 2P',ui-monospace,monospace;
 }
-body.nes .wrap { border-left: 4px solid var(--nes-border); border-right: 4px solid var(--nes-border); }
-body.nes h1 { color: var(--nes-hi); text-shadow: 3px 3px 0 #000, -1px -1px 0 #3344aa; letter-spacing:2px; }
-body.nes .sub { color: var(--muted); font-size: 8px; letter-spacing:1px; }
-body.nes .card { background: var(--nes-panel); border: 3px solid var(--nes-border); border-radius: 0; box-shadow: 4px 4px 0 #000; }
-body.nes button { font-family: 'Press Start 2P', monospace; border-radius:0; background: var(--nes-btn); border: 2px solid var(--nes-border); font-size: 9px; padding: 10px 12px; text-transform:uppercase; box-shadow: 3px 3px 0 #000; }
-body.nes button:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 #000; }
-body.nes button.good { background: #115533; border-color: var(--good); color: var(--good); }
-body.nes button.primary { background: #112255; border-color: #4477ff; color: #88aaff; }
-body.nes button.danger { background: #441122; border-color: var(--danger); color: var(--danger); }
-body.nes button.active { background: var(--nes-btn-hi); border-color: var(--nes-hi); color: var(--nes-hi); }
-body.nes .die.available { background: var(--nes-tile); color: #111; border-radius: 0; border: 3px solid #444; box-shadow: 3px 3px 0 #000; font-family: 'Press Start 2P', monospace; font-size: 16px; }
-body.nes .die.selected { border-color: var(--nes-hi); box-shadow: 0 0 0 2px var(--nes-hi), 3px 3px 0 #000; }
-body.nes .die.used { background: #1a1a2a; color: #333; border: 3px solid #222; box-shadow: none; }
-body.nes .cell { border-radius: 0; border: 2px solid #1a2255; background: #080818; }
-body.nes .cell.filled { background: var(--nes-tile); border: 3px solid #444; box-shadow: 2px 2px 0 #000; }
-body.nes .cell.drop-target { background: #0a2a0a; border-color: var(--good); }
-body.nes .cell.selected-cell { border-color: var(--nes-hi); background: #1a1a00; box-shadow: 0 0 0 2px var(--nes-hi); }
-body.nes .cell .letter { font-family: 'Press Start 2P', monospace; font-size: 14px; color: #111; text-shadow: 1px 1px 0 rgba(255,255,255,.3); }
-body.nes #statusBar { border-radius:0; border-left: 4px solid var(--nes-hi); background: #0a0a20; font-size:9px; }
-body.nes #hintBox { font-size: 9px; color: #aabbdd; line-height: 1.8; }
-body.nes .score-item .val { font-size: 16px; color: var(--nes-hi); }
-body.nes .score-item .lbl { font-size: 7px; color: var(--muted); }
-body.nes strong { color: var(--nes-hi); font-size: 10px; letter-spacing: 1px; }
-body.nes #tray { background: #080818; border: 2px solid #1a2255; border-radius:0; }
-body.nes #board-wrap { background: #040410; border: 3px solid #1a2255; padding: 8px; }
-body.nes input { font-family:'Press Start 2P',monospace; font-size:10px; border-radius:0; }
-
-/* ── SNES BODY  (16-bit richer style) ───────────── */
-body.snes {
-  background: var(--snes-bg);
-  background-image: radial-gradient(ellipse at top, #2a1060 0%, #1a0a2e 60%, #0a0518 100%);
-  font-family: system-ui, -apple-system, sans-serif;
+body.nes .wrap{border-left:4px solid var(--nes-border);border-right:4px solid var(--nes-border);}
+body.nes h1{color:var(--nes-hi);text-shadow:3px 3px 0 #000,-1px -1px 0 #3344aa;letter-spacing:2px;}
+body.nes .sub{color:var(--muted);font-size:8px;letter-spacing:1px;}
+body.nes .card{background:var(--nes-panel);border:3px solid var(--nes-border);border-radius:0;box-shadow:4px 4px 0 #000;}
+body.nes button{font-family:'Press Start 2P',monospace;border-radius:0;background:var(--nes-btn);border:2px solid var(--nes-border);font-size:9px;padding:10px 12px;text-transform:uppercase;box-shadow:3px 3px 0 #000;color:var(--ink);}
+body.nes button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #000;}
+body.nes button.good{background:#115533;border-color:var(--good);color:var(--good);}
+body.nes button.primary{background:#112255;border-color:#4477ff;color:#88aaff;}
+body.nes button.danger{background:#441122;border-color:var(--danger);color:var(--danger);}
+body.nes button.active{background:var(--nes-btn-hi);border-color:var(--nes-hi);color:var(--nes-hi);}
+body.nes .die.available{background:var(--nes-tile);color:#111;border:3px solid #444;box-shadow:3px 3px 0 #000;}
+body.nes .die.selected{border-color:var(--nes-hi);box-shadow:0 0 0 2px var(--nes-hi),3px 3px 0 #000;}
+body.nes .die.used{background:#1a1a2a;color:#333;border:3px solid #222;box-shadow:none;}
+body.nes .cell{border:2px solid #1a2255;background:#080818;}
+body.nes .cell.filled{background:var(--nes-tile);border:3px solid #444;box-shadow:2px 2px 0 #000;}
+body.nes .cell.drop-target{background:#0a2a0a;border-color:var(--good);}
+body.nes .cell.selected-cell{border-color:var(--nes-hi);background:#1a1a00;box-shadow:0 0 0 2px var(--nes-hi);}
+body.nes .cell .letter,body.nes .die .letter{font-family:'Press Start 2P',monospace;color:#111;text-shadow:1px 1px 0 rgba(255,255,255,.3);}
+body.nes #statusBar{border-radius:0;border-left:4px solid var(--nes-hi);background:#0a0a20;font-size:9px;}
+body.nes #hintBox{font-size:9px;color:#aabbdd;line-height:1.8;}
+body.nes .score-item .val{color:var(--nes-hi);}
+body.nes .score-item .lbl{color:var(--muted);}
+body.nes strong{color:var(--nes-hi);letter-spacing:1px;}
+body.nes #tray{background:#080818;border:2px solid #1a2255;}
+body.nes #board-wrap{background:#040410;border:3px solid #1a2255;}
+/* ── SNES ────────────────────────────────── */
+body.snes{
+  background:var(--snes-bg);
+  background-image:radial-gradient(ellipse at top,#2a1060 0%,#1a0a2e 60%,#0a0518 100%);
+  font-family:system-ui,-apple-system,sans-serif;
 }
-body.snes h1 { color: var(--snes-hi); text-shadow: 2px 2px 8px rgba(255,150,0,.5), 0 0 20px rgba(255,150,0,.3); font-size: clamp(28px,5vw,52px); }
-body.snes .sub { color: #cc88ff; font-size: 12px; }
-body.snes .card { background: linear-gradient(160deg, rgba(80,20,120,.6), rgba(40,10,80,.8)); border: 1px solid rgba(200,100,255,.3); border-radius: 16px; box-shadow: 0 8px 32px rgba(150,0,255,.2), inset 0 1px 0 rgba(255,255,255,.1); backdrop-filter: blur(12px); }
-body.snes button { border-radius:8px; font-size:13px; background: linear-gradient(180deg, var(--snes-btn), #1e0840); border: 1px solid rgba(200,100,255,.4); box-shadow: 0 4px 12px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.1); }
-body.snes button:active { transform:translateY(2px); box-shadow: 0 2px 6px rgba(0,0,0,.4); }
-body.snes button.good { background: linear-gradient(180deg,#1a6644,#0d3322); border-color: var(--good); color: var(--good); box-shadow: 0 0 12px rgba(46,230,166,.3); }
-body.snes button.primary { background: linear-gradient(180deg,#223388,#111844); border-color: #6688ff; color: #aabbff; }
-body.snes button.danger { background: linear-gradient(180deg,#661122,#330a11); border-color: var(--danger); color: var(--danger); }
-body.snes button.active { background: linear-gradient(180deg,var(--snes-btn-hi),#441088); border-color: var(--snes-hi); color: var(--snes-hi); box-shadow: 0 0 16px rgba(255,150,0,.4); }
-body.snes .die.available { background: linear-gradient(180deg,#ffe8a0 0%,#d4a030 40%,#c08020 100%); color: #1a0a00; border-radius:6px; border: 3px solid #8a5010; border-bottom: 4px solid #5a3000; box-shadow: inset 0 2px 0 rgba(255,255,180,.8), 0 6px 0 #5a3000, 2px 8px 16px rgba(0,0,0,.5); font-size:20px; font-weight:900; }
-body.snes .die.selected { border-color: var(--snes-hi); box-shadow: 0 0 0 3px var(--snes-hi), 0 6px 16px rgba(0,0,0,.4); }
-body.snes .die.used { background: linear-gradient(180deg,#2a1a3a,#1a0a28); color: #554466; border: 2px solid #331a44; box-shadow: none; }
-body.snes .cell { border-radius:4px; background: rgba(40,10,80,.5); border: 2px solid rgba(150,50,220,.3); }
-body.snes .cell.filled { background: linear-gradient(180deg,#ffe8a0 0%,#d4a030 40%,#c08020 100%); border: 3px solid #8a5010; border-bottom: 4px solid #5a3000; box-shadow: inset 0 2px 0 rgba(255,255,180,.8), 2px 4px 0 #5a3000; }
-body.snes .cell.drop-target { background: rgba(46,230,166,.2); border-color: var(--good); box-shadow: 0 0 12px rgba(46,230,166,.4); transform: scale(1.05); }
-body.snes .cell.selected-cell { border-color: var(--snes-hi); background: rgba(255,150,0,.15); box-shadow: 0 0 12px rgba(255,150,0,.3); }
-body.snes .cell .letter { font-size:16px; font-weight:900; color:#1a0a00; text-shadow: 0 1px 0 rgba(255,255,180,.6); }
-body.snes #statusBar { border-radius:12px; border-left: 3px solid var(--good); background: rgba(46,230,166,.06); }
-body.snes #hintBox { color: #cc99ff; line-height: 1.6; }
-body.snes .score-item .val { font-size: 22px; color: var(--snes-hi); text-shadow: 0 0 8px rgba(255,150,0,.5); }
-body.snes strong { color: #ddaaff; }
-body.snes #tray { background: rgba(0,0,0,.3); border: 1px solid rgba(200,100,255,.2); border-radius: 12px; }
-body.snes #board-wrap { background: linear-gradient(180deg,#0a0020,#150030); border: 3px solid rgba(150,50,220,.5); border-radius:8px; padding:8px; box-shadow: inset 0 0 30px rgba(100,0,200,.2); }
+body.snes h1{color:var(--snes-hi);text-shadow:2px 2px 8px rgba(255,150,0,.5),0 0 20px rgba(255,150,0,.3);}
+body.snes .sub{color:#cc88ff;}
+body.snes .card{background:linear-gradient(160deg,rgba(80,20,120,.6),rgba(40,10,80,.8));border:1px solid rgba(200,100,255,.3);border-radius:16px;box-shadow:0 8px 32px rgba(150,0,255,.2),inset 0 1px 0 rgba(255,255,255,.1);backdrop-filter:blur(12px);}
+body.snes button{border-radius:8px;font-size:13px;background:linear-gradient(180deg,var(--snes-btn),#1e0840);border:1px solid rgba(200,100,255,.4);box-shadow:0 4px 12px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.1);color:var(--ink);padding:10px 14px;}
+body.snes button.good{background:linear-gradient(180deg,#1a6644,#0d3322);border-color:var(--good);color:var(--good);}
+body.snes button.primary{background:linear-gradient(180deg,#223388,#111844);border-color:#6688ff;color:#aabbff;}
+body.snes button.danger{background:linear-gradient(180deg,#661122,#330a11);border-color:var(--danger);color:var(--danger);}
+body.snes button.active{background:linear-gradient(180deg,var(--snes-btn-hi),#441088);border-color:var(--snes-hi);color:var(--snes-hi);}
+body.snes .die.available{background:linear-gradient(180deg,#ffe8a0 0%,#d4a030 40%,#c08020 100%);color:#1a0a00;border:3px solid #8a5010;border-bottom:4px solid #5a3000;box-shadow:inset 0 2px 0 rgba(255,255,180,.8),0 6px 0 #5a3000,2px 8px 16px rgba(0,0,0,.5);font-weight:900;}
+body.snes .die.selected{border-color:var(--snes-hi);box-shadow:0 0 0 3px var(--snes-hi),0 6px 16px rgba(0,0,0,.4);}
+body.snes .die.used{background:linear-gradient(180deg,#2a1a3a,#1a0a28);color:#554466;border:2px solid #331a44;box-shadow:none;}
+body.snes .cell{background:rgba(40,10,80,.5);border:2px solid rgba(150,50,220,.3);border-radius:4px;}
+body.snes .cell.filled{background:linear-gradient(180deg,#ffe8a0 0%,#d4a030 40%,#c08020 100%);border:3px solid #8a5010;border-bottom:4px solid #5a3000;box-shadow:inset 0 2px 0 rgba(255,255,180,.8),2px 4px 0 #5a3000;}
+body.snes .cell.drop-target{background:rgba(46,230,166,.25);border-color:var(--good);box-shadow:0 0 12px rgba(46,230,166,.5);}
+body.snes .cell.selected-cell{border-color:var(--snes-hi);background:rgba(255,150,0,.15);box-shadow:0 0 12px rgba(255,150,0,.3);}
+body.snes .cell .letter,body.snes .die .letter{font-weight:900;color:#1a0a00;text-shadow:0 1px 0 rgba(255,255,180,.6);}
+body.snes #statusBar{border-radius:12px;border-left:3px solid var(--good);background:rgba(46,230,166,.06);}
+body.snes #hintBox{color:#cc99ff;line-height:1.6;}
+body.snes .score-item .val{color:var(--snes-hi);text-shadow:0 0 8px rgba(255,150,0,.5);}
+body.snes strong{color:#ddaaff;}
+body.snes #tray{background:rgba(0,0,0,.3);border:1px solid rgba(200,100,255,.2);border-radius:12px;}
+body.snes #board-wrap{background:linear-gradient(180deg,#0a0020,#150030);border:3px solid rgba(150,50,220,.5);border-radius:8px;box-shadow:inset 0 0 30px rgba(100,0,200,.2);}
 
-/* ── SHARED LAYOUT (theme-independent) ─────────── */
-.wrap { max-width:1100px; margin:0 auto; padding:16px; }
-.top { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px; }
-h1 { margin:0; font-size:clamp(20px,4vw,40px); }
-.sub { margin-top:2px; }
-.card { padding:14px; }
-button { appearance:none; cursor:pointer; touch-action:manipulation; color:var(--ink); font:inherit; }
-.row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
-.hidden { display:none!important; }
-#tray { display:grid; grid-template-columns:repeat(6,52px); gap:6px; margin:12px 0; padding:8px; width:fit-content; }
-.die { width:52px; height:52px; display:grid; place-items:center; font-weight:800; cursor:grab; user-select:none; transition:transform .1s,opacity .1s; touch-action:none; }
-.die.dragging { opacity:.3; }
-#board-wrap { overflow-x:auto; margin:12px 0; }
-#board { display:inline-grid; gap:4px; padding:4px; }
-.cell { width:46px; height:46px; display:grid; place-items:center; cursor:pointer; transition:background .12s,border-color .12s; touch-action:manipulation; position:relative; }
-.cell .letter { pointer-events:none; }
-.cell .rm { position:absolute; top:1px; right:3px; font-size:10px; color:var(--muted); cursor:pointer; display:none; }
-.cell:hover .rm { display:block; }
-#statusBar { margin:10px 0; padding:10px 12px; border-left:4px solid var(--good); font-size:12px; line-height:1.6; }
-#hintBox { margin:8px 0; min-height:20px; font-size:12px; line-height:1.6; }
-.two { display:grid; grid-template-columns:1fr 300px; gap:14px; }
-@media(max-width:820px){ .two{grid-template-columns:1fr} }
-.score-row { display:flex; gap:16px; flex-wrap:wrap; margin-top:8px; }
-.score-item { text-align:center; }
-.score-item .lbl { font-size:9px; color:var(--muted); margin-top:2px; }
-.footer { font-size:10px; margin-top:8px; color:var(--muted); }
-#menuScreen { max-width:720px; margin:24px auto 0; }
-input { width:100%; padding:10px; border:1px solid var(--border); background:#111; color:var(--ink); font-size:14px; }
-hr { border:none; border-top:1px solid var(--border); margin:12px 0; }
+/* ── SHARED LAYOUT ───────────────────────── */
+.wrap{max-width:1100px;margin:0 auto;padding:16px;}
+.top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;}
+h1{margin:0;font-size:clamp(20px,4vw,40px);}
+.sub{margin-top:2px;font-size:12px;}
+.card{padding:14px;}
+button{appearance:none;cursor:pointer;touch-action:manipulation;font:inherit;}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+.hidden{display:none!important;}
+
+#tray{
+  display:grid;grid-template-columns:repeat(6,1fr);
+  gap:6px;margin:12px 0;padding:8px;
+  width:min(96vw,420px);
+}
+.die{
+  aspect-ratio:1/1;width:100%;
+  display:grid;place-items:center;
+  font-weight:800;cursor:grab;user-select:none;
+  transition:transform .1s,opacity .1s;
+  touch-action:none;
+  font-size:clamp(14px,4.2vw,20px);
+}
+.die.dragging{opacity:.3;}
+
+#board-wrap{
+  margin:12px 0;padding:6px;
+  width:min(96vw,640px);
+  aspect-ratio:1/1;
+}
+#board{
+  display:grid;
+  grid-template-columns:repeat(12,1fr);
+  grid-template-rows:repeat(12,1fr);
+  gap:3px;width:100%;height:100%;
+}
+.cell{
+  aspect-ratio:1/1;width:100%;
+  display:grid;place-items:center;
+  cursor:pointer;
+  transition:background .12s,border-color .12s,transform .12s;
+  touch-action:manipulation;
+  position:relative;
+}
+.cell .letter{pointer-events:none;font-size:clamp(10px,2.4vw,16px);}
+.cell .rm{position:absolute;top:1px;right:3px;font-size:10px;color:var(--muted);cursor:pointer;display:none;}
+.cell:hover .rm{display:block;}
+
+.drag-ghost{
+  position:fixed;pointer-events:none;z-index:9999;
+  width:48px;height:48px;display:grid;place-items:center;
+  font-weight:800;font-size:20px;border-radius:4px;
+  transform:translate(-50%,-50%) scale(1.1);transition:none;
+}
+
+#statusBar{margin:10px 0;padding:10px 12px;border-left:4px solid var(--good);font-size:12px;line-height:1.6;}
+#hintBox{margin:8px 0;min-height:20px;font-size:12px;line-height:1.6;}
+.two{display:grid;grid-template-columns:1fr 300px;gap:14px;align-items:start;}
+@media(max-width:820px){.two{grid-template-columns:1fr;}}
+.score-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;}
+.score-item{text-align:center;}
+.score-item .lbl{font-size:9px;color:var(--muted);margin-top:2px;}
+.score-item .val{font-size:20px;}
+.footer{font-size:10px;margin-top:8px;color:var(--muted);}
+#menuScreen{max-width:720px;margin:24px auto 0;}
+input{width:100%;padding:10px;border:1px solid var(--border);background:#111;color:var(--ink);font-size:14px;}
+hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
 </style>
 </head>
 <body class="nes">
@@ -135,46 +167,40 @@ hr { border:none; border-top:1px solid var(--border); margin:12px 0; }
   <div class="top">
     <div><h1>Q~Cross</h1><div class="sub">Retro dice-crossword puzzle</div></div>
     <div class="row">
-      <button id="musicBtn">♪ ON</button>
+      <button id="musicBtn">♪ OFF</button>
       <button id="soundBtn">SFX ON</button>
       <button id="nesBtn" class="active">NES</button>
       <button id="snesBtn">SNES</button>
     </div>
   </div>
 
-  <!-- MENU -->
   <div id="menuScreen" class="card">
-    <svg id="tinLogo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" style="width:320px;max-width:100%;margin:0 auto 16px;display:block">
-  <defs>
-    <radialGradient id="tinGrad" cx="50%" cy="40%" r="60%"><stop offset="0%" stop-color="#e8d5a0"/><stop offset="100%" stop-color="#b89a50"/></radialGradient>
-    <radialGradient id="tinShine" cx="30%" cy="20%" r="70%"><stop offset="0%" stop-color="#fff" stop-opacity=".4"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient>
-  </defs>
-  <!-- tin body -->
-  <ellipse cx="160" cy="155" rx="148" ry="18" fill="#8a6a20" opacity=".6"/>
-  <rect x="12" y="30" width="296" height="128" rx="18" fill="url(#tinGrad)" stroke="#8a6a20" stroke-width="3"/>
-  <rect x="12" y="30" width="296" height="128" rx="18" fill="url(#tinShine)"/>
-  <!-- lid band -->
-  <rect x="12" y="30" width="296" height="22" rx="18" fill="#c8a84a" stroke="#8a6a20" stroke-width="2"/>
-  <rect x="12" y="41" width="296" height="11" fill="#c8a84a"/>
-  <!-- decorative border -->
-  <rect x="22" y="60" width="276" height="88" rx="10" fill="none" stroke="#8a6a20" stroke-width="2" opacity=".5"/>
-  <!-- title -->
-  <text x="160" y="105" text-anchor="middle" font-family="'Press Start 2P',monospace" font-size="28" fill="#1a0a00" letter-spacing="2">Q~Cross</text>
-  <text x="160" y="122" text-anchor="middle" font-family="'Press Start 2P',monospace" font-size="7" fill="#3a1a00" letter-spacing="1">THE DICE CROSSWORD PUZZLE</text>
-  <text x="160" y="137" text-anchor="middle" font-family="Georgia,serif" font-size="10" fill="#5a3a00" font-style="italic">12 Dice · Play Solo · Serious Fun</text>
-  <!-- scattered dice -->
-  <g transform="translate(28,62) rotate(-18)"><rect width="22" height="22" rx="4" fill="#f5f0e0" stroke="#888" stroke-width="1.5"/><text x="11" y="16" text-anchor="middle" font-size="13" font-weight="bold" fill="#222">M</text></g>
-  <g transform="translate(262,58) rotate(14)"><rect width="22" height="22" rx="4" fill="#f5f0e0" stroke="#888" stroke-width="1.5"/><text x="11" y="16" text-anchor="middle" font-size="13" font-weight="bold" fill="#222">E</text></g>
-  <g transform="translate(30,110) rotate(8)"><rect width="22" height="22" rx="4" fill="#f5f0e0" stroke="#888" stroke-width="1.5"/><text x="11" y="16" text-anchor="middle" font-size="13" font-weight="bold" fill="#222">A</text></g>
-  <g transform="translate(268,108) rotate(-10)"><rect width="22" height="22" rx="4" fill="#f5f0e0" stroke="#888" stroke-width="1.5"/><text x="11" y="16" text-anchor="middle" font-size="13" font-weight="bold" fill="#222">R</text></g>
-</svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" style="width:320px;max-width:100%;margin:0 auto 16px;display:block">
+      <defs>
+        <radialGradient id="tinGrad" cx="50%" cy="40%" r="60%"><stop offset="0%" stop-color="#e8d5a0"/><stop offset="100%" stop-color="#b89a50"/></radialGradient>
+        <radialGradient id="tinShine" cx="30%" cy="20%" r="70%"><stop offset="0%" stop-color="#fff" stop-opacity=".4"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient>
+      </defs>
+      <ellipse cx="160" cy="155" rx="148" ry="18" fill="#8a6a20" opacity=".6"/>
+      <rect x="12" y="30" width="296" height="128" rx="18" fill="url(#tinGrad)" stroke="#8a6a20" stroke-width="3"/>
+      <rect x="12" y="30" width="296" height="128" rx="18" fill="url(#tinShine)"/>
+      <rect x="12" y="30" width="296" height="22" rx="18" fill="#c8a84a" stroke="#8a6a20" stroke-width="2"/>
+      <rect x="12" y="41" width="296" height="11" fill="#c8a84a"/>
+      <rect x="22" y="60" width="276" height="88" rx="10" fill="none" stroke="#8a6a20" stroke-width="2" opacity=".5"/>
+      <text x="160" y="105" text-anchor="middle" font-family="'Press Start 2P',monospace" font-size="28" fill="#1a0a00" letter-spacing="2">Q~Cross</text>
+      <text x="160" y="122" text-anchor="middle" font-family="'Press Start 2P',monospace" font-size="7" fill="#3a1a00" letter-spacing="1">THE DICE CROSSWORD PUZZLE</text>
+      <text x="160" y="137" text-anchor="middle" font-family="Georgia,serif" font-size="10" fill="#5a3a00" font-style="italic">12 Dice · Play Solo · Serious Fun</text>
+      <g transform="translate(28,62) rotate(-18)"><rect width="22" height="22" rx="4" fill="#f5f0e0" stroke="#888" stroke-width="1.5"/><text x="11" y="16" text-anchor="middle" font-size="13" font-weight="bold" fill="#222">M</text></g>
+      <g transform="translate(262,58) rotate(14)"><rect width="22" height="22" rx="4" fill="#f5f0e0" stroke="#888" stroke-width="1.5"/><text x="11" y="16" text-anchor="middle" font-size="13" font-weight="bold" fill="#222">E</text></g>
+      <g transform="translate(30,110) rotate(8)"><rect width="22" height="22" rx="4" fill="#f5f0e0" stroke="#888" stroke-width="1.5"/><text x="11" y="16" text-anchor="middle" font-size="13" font-weight="bold" fill="#222">A</text></g>
+      <g transform="translate(268,108) rotate(-10)"><rect width="22" height="22" rx="4" fill="#f5f0e0" stroke="#888" stroke-width="1.5"/><text x="11" y="16" text-anchor="middle" font-size="13" font-weight="bold" fill="#222">R</text></g>
+    </svg>
     <div><strong>Start a game</strong><div class="sub" style="margin:4px 0 12px">Choose a mode, then start playing.</div></div>
     <div class="row">
       <button data-mode="classic" class="active">Classic Virtual Dice</button>
       <button data-mode="manual">Manual Entry</button>
     </div>
     <div id="manualInput" class="hidden" style="margin-top:10px">
-      <input id="manualLetters" placeholder="Enter 12 letters e.g. AEIOUYBCDEFG" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:#111;color:var(--ink);font-size:16px"/>
+      <input id="manualLetters" placeholder="Enter 12 letters e.g. AEIOUYBCDEFG"/>
       <div class="sub" style="margin-top:4px">Enter exactly 12 letters matching your physical dice roll.</div>
     </div>
     <div class="row" style="margin-top:12px">
@@ -184,7 +210,6 @@ hr { border:none; border-top:1px solid var(--border); margin:12px 0; }
     <div class="footer" id="menuDiag">Ready.</div>
   </div>
 
-  <!-- GAME -->
   <div id="gameScreen" class="hidden">
     <div class="two">
       <div class="card">
@@ -195,18 +220,12 @@ hr { border:none; border-top:1px solid var(--border); margin:12px 0; }
             <button id="menuBtn">Menu</button>
           </div>
         </div>
-
-        <!-- Dice tray -->
-        <div class="sub" style="margin:10px 0 2px">Tap or drag a tile onto the board</div>
+        <div class="sub" style="margin:10px 0 2px">Drag a tile onto the board · double-tap a placed tile to return it</div>
         <div id="tray"></div>
-
-        <!-- Grid -->
         <div class="sub" style="margin:8px 0 2px">Board — <span id="placedCount">0</span>/12 placed</div>
         <div id="board-wrap"><div id="board"></div></div>
-
         <div id="statusBar" class="hidden"></div>
       </div>
-
       <div class="card">
         <strong>Controls</strong>
         <div class="row" style="margin:10px 0">
@@ -214,10 +233,10 @@ hr { border:none; border-top:1px solid var(--border); margin:12px 0; }
           <button id="hintBtn">Hint</button>
         </div>
         <div id="hintBox"></div>
-        <hr style="border-color:var(--border);margin:12px 0"/>
+        <hr/>
         <strong>Clues / Letters</strong>
         <div id="cluesList" style="margin-top:8px;font-size:13px"></div>
-        <hr style="border-color:var(--border);margin:12px 0"/>
+        <hr/>
         <div class="score-row">
           <div class="score-item"><div class="val" id="hintCount">0</div><div class="lbl">Hints</div></div>
           <div class="score-item"><div class="val" id="placedScore">0</div><div class="lbl">Placed</div></div>
@@ -226,7 +245,6 @@ hr { border:none; border-top:1px solid var(--border); margin:12px 0; }
     </div>
   </div>
 </div>
-
 <script>
 (() => {
   const API = 'https://qcross-backend.onrender.com';
@@ -234,139 +252,148 @@ hr { border:none; border-top:1px solid var(--border); margin:12px 0; }
   const $ = id => document.getElementById(id);
   const state = {
     theme:'nes', mode:'classic', puzzle:null,
-    letters:[], placed:{}, // placed: {cellKey: {letter, dieIdx}}
+    letters:[], placed:{},
     selected:null, selectedCell:null, hintN:0, hintCount:0,
-
+    _lastDieTap:{idx:null,t:0},
+    _lastCellTap:{key:null,t:0},
   };
 
-
-  // ── AUDIO ENGINE ──────────────────────────────────────────────────────────
-  let audioCtx = null;
-  let musicNode = null;
-  let musicTimer = null;
+  let audioCtx=null, musicNode=null, musicTimer=null;
+  let musicOn=false, soundOn=true, audioUnlocked=false;
 
   function getAudioCtx(){
-    if(!audioCtx){ try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+    if(!audioCtx){ try{ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
     return audioCtx;
   }
-
-  function stopBgMusic(){
-    if(musicTimer){ clearTimeout(musicTimer); musicTimer = null; }
-    if(musicNode){ try{ musicNode.stop(); }catch(e){} try{ musicNode.disconnect(); }catch(e){} musicNode = null; }
+  function unlockAudio(){
+    if(audioUnlocked) return;
+    const c=getAudioCtx(); if(!c) return;
+    if(c.state==='suspended'){ c.resume().catch(()=>{}); }
+    try{
+      const o=c.createOscillator(), g=c.createGain();
+      g.gain.value=0; o.connect(g); g.connect(c.destination);
+      o.start(); o.stop(c.currentTime+0.01);
+    }catch(e){}
+    audioUnlocked=true;
   }
-
+  function stopBgMusic(){
+    if(musicTimer){clearTimeout(musicTimer);musicTimer=null;}
+    if(musicNode){try{musicNode.stop();}catch(e){}try{musicNode.disconnect();}catch(e){}musicNode=null;}
+  }
   function playMusic(mode){
     stopBgMusic();
     if(!musicOn) return;
-    var ctx = getAudioCtx(); if(!ctx) return;
-    var step = 0;
-    var pattern = mode === 'nes' ? [262,330,392,523,392,330,294,370] : [261,329,392,494,392,329,294,370];
+    const c=getAudioCtx(); if(!c) return;
+    let step=0;
+    const pattern = mode==='nes' ? [262,330,392,523,392,330,294,370] : [261,329,392,494,392,329,294,370];
     function tick(){
       if(!musicOn) return;
-      if(musicNode){ try{ musicNode.stop(); }catch(e){} try{ musicNode.disconnect(); }catch(e){} musicNode = null; }
-      var osc = ctx.createOscillator();
-      var gain = ctx.createGain();
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.type = mode === 'nes' ? 'square' : 'sine';
-      osc.frequency.value = pattern[step % pattern.length];
-      gain.gain.setValueAtTime(mode === 'nes' ? 0.035 : 0.02, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (mode === 'nes' ? 0.16 : 0.42));
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + (mode === 'nes' ? 0.17 : 0.43));
-      musicNode = osc;
-      step++;
-      musicTimer = setTimeout(tick, mode === 'nes' ? 180 : 440);
+      if(musicNode){try{musicNode.stop();}catch(e){}try{musicNode.disconnect();}catch(e){}musicNode=null;}
+      const osc=c.createOscillator(), gain=c.createGain();
+      osc.connect(gain); gain.connect(c.destination);
+      osc.type = mode==='nes' ? 'square' : 'sine';
+      osc.frequency.value = pattern[step%pattern.length];
+      gain.gain.setValueAtTime(mode==='nes' ? 0.035 : 0.02, c.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime+(mode==='nes'?0.16:0.42));
+      osc.start(c.currentTime);
+      osc.stop(c.currentTime+(mode==='nes'?0.17:0.43));
+      musicNode=osc; step++;
+      musicTimer=setTimeout(tick, mode==='nes' ? 180 : 440);
     }
     tick();
   }
-
-  var musicOn = false;
-  var soundOn = true;
-
+  function blip(freqs, type, vol){
+    const c=getAudioCtx(); if(!c||!soundOn) return;
+    freqs.forEach((f,i)=>{
+      const o=c.createOscillator(), g=c.createGain();
+      o.connect(g); g.connect(c.destination);
+      o.type=type; o.frequency.value=f;
+      g.gain.setValueAtTime(vol, c.currentTime+i*0.06);
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime+i*0.06+0.05);
+      o.start(c.currentTime+i*0.06);
+      o.stop(c.currentTime+i*0.06+0.06);
+    });
+  }
   const SFX = {
-    nes: {
-      select:  ()=>{ var c=getAudioCtx(); if(!c||!soundOn) return; [440,660].forEach((f,i)=>{ let o=c.createOscillator(),g=c.createGain(); o.connect(g); g.connect(c.destination); o.type='square'; o.frequency.value=f; g.gain.setValueAtTime(0.08,c.currentTime+i*0.06); g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+i*0.06+0.05); o.start(c.currentTime+i*0.06); o.stop(c.currentTime+i*0.06+0.06); }); },
-      place:   ()=>{ var c=getAudioCtx(); if(!c||!soundOn) return; [523,659].forEach((f,i)=>{ let o=c.createOscillator(),g=c.createGain(); o.connect(g); g.connect(c.destination); o.type='square'; o.frequency.value=f; g.gain.setValueAtTime(0.08,c.currentTime+i*0.05); g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+i*0.05+0.05); o.start(c.currentTime+i*0.05); o.stop(c.currentTime+i*0.05+0.06); }); },
-      move:    ()=>{ var c=getAudioCtx(); if(!c||!soundOn) return; let o=c.createOscillator(),g=c.createGain(); o.connect(g); g.connect(c.destination); o.type='square'; o.frequency.value=392; g.gain.setValueAtTime(0.08,c.currentTime); g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.05); o.start(c.currentTime); o.stop(c.currentTime+0.06); },
-      remove:  ()=>{ var c=getAudioCtx(); if(!c||!soundOn) return; let o=c.createOscillator(),g=c.createGain(); o.connect(g); g.connect(c.destination); o.type='square'; o.frequency.value=262; g.gain.setValueAtTime(0.08,c.currentTime); g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.06); o.start(c.currentTime); o.stop(c.currentTime+0.07); },
-      clear:   ()=>{}, validate:()=>{}, hint:()=>{}, roll:()=>{}, menu:()=>{}, error:()=>{}
+    nes:{
+      select:()=>blip([440,660],'square',0.08),
+      place: ()=>blip([523,659],'square',0.08),
+      move:  ()=>blip([392],'square',0.08),
+      remove:()=>blip([262],'square',0.08),
+      menu:  ()=>blip([330],'square',0.06),
+      roll:  ()=>blip([196,262,330,392],'square',0.06),
+      hint:  ()=>blip([523,392],'square',0.06),
+      validate:()=>blip([523,659,784],'square',0.07),
+      clear: ()=>blip([200,150],'square',0.06),
+      error: ()=>blip([110],'square',0.08),
     },
-    snes: {
-      select:  ()=>{ var c=getAudioCtx(); if(!c||!soundOn) return; [523,659].forEach((f,i)=>{ let o=c.createOscillator(),g=c.createGain(); o.connect(g); g.connect(c.destination); o.type='sine'; o.frequency.value=f; g.gain.setValueAtTime(0.05,c.currentTime+i*0.07); g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+i*0.07+0.06); o.start(c.currentTime+i*0.07); o.stop(c.currentTime+i*0.07+0.07); }); },
-      place:   ()=>{ var c=getAudioCtx(); if(!c||!soundOn) return; [659,784].forEach((f,i)=>{ let o=c.createOscillator(),g=c.createGain(); o.connect(g); g.connect(c.destination); o.type='sine'; o.frequency.value=f; g.gain.setValueAtTime(0.05,c.currentTime+i*0.06); g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+i*0.06+0.05); o.start(c.currentTime+i*0.06); o.stop(c.currentTime+i*0.06+0.06); }); },
-      move:    ()=>{ var c=getAudioCtx(); if(!c||!soundOn) return; let o=c.createOscillator(),g=c.createGain(); o.connect(g); g.connect(c.destination); o.type='sine'; o.frequency.value=440; g.gain.setValueAtTime(0.05,c.currentTime); g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.06); o.start(c.currentTime); o.stop(c.currentTime+0.07); },
-      remove:  ()=>{ var c=getAudioCtx(); if(!c||!soundOn) return; let o=c.createOscillator(),g=c.createGain(); o.connect(g); g.connect(c.destination); o.type='triangle'; o.frequency.value=330; g.gain.setValueAtTime(0.05,c.currentTime); g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.06); o.start(c.currentTime); o.stop(c.currentTime+0.07); },
-      clear:   ()=>{}, validate:()=>{}, hint:()=>{}, roll:()=>{}, menu:()=>{}, error:()=>{}
+    snes:{
+      select:()=>blip([523,659],'sine',0.05),
+      place: ()=>blip([659,784],'sine',0.05),
+      move:  ()=>blip([440],'sine',0.05),
+      remove:()=>blip([330],'triangle',0.05),
+      menu:  ()=>blip([440],'sine',0.04),
+      roll:  ()=>blip([261,329,392,523],'sine',0.04),
+      hint:  ()=>blip([659,494],'sine',0.04),
+      validate:()=>blip([659,784,988],'sine',0.05),
+      clear: ()=>blip([220,165],'sine',0.04),
+      error: ()=>blip([120],'sine',0.06),
     }
   };
-
-  function sfx(name){ if(!soundOn) return; try{ var s=SFX[state.theme]; if(s&&s[name]) s[name](); }catch(e){} }
-
+  function sfx(n){ if(!soundOn) return; try{ const s=SFX[state.theme]; if(s&&s[n]) s[n](); }catch(e){} }
   function toggleMusic(){
-    musicOn = !musicOn;
-    var btn = $('musicBtn'); if(btn) btn.textContent = musicOn ? '♪ ON' : '♪ OFF';
+    unlockAudio();
+    musicOn=!musicOn;
+    const b=$('musicBtn'); if(b) b.textContent = musicOn ? '♪ ON' : '♪ OFF';
     stopBgMusic();
     if(musicOn) playMusic(state.theme);
   }
-
   function toggleSound(){
-    soundOn = !soundOn;
-    var btn = $('soundBtn'); if(btn) btn.textContent = soundOn ? 'SFX ON' : 'SFX OFF';
-    if(btn) btn.style.opacity = soundOn ? '1' : '0.45';
+    unlockAudio();
+    soundOn=!soundOn;
+    const b=$('soundBtn'); if(b){ b.textContent = soundOn ? 'SFX ON' : 'SFX OFF'; b.style.opacity = soundOn ? '1' : '0.45'; }
   }
 
-  function restartMusicIfOn(){
+  function setTheme(t){
+    sfx('menu');
+    state.theme=t;
+    document.body.className=t;
+    $('nesBtn').classList.toggle('active',t==='nes');
+    $('snesBtn').classList.toggle('active',t==='snes');
     stopBgMusic();
-    if(musicOn) playMusic(state.theme);
+    if(musicOn) playMusic(t);
   }
-  // ── END AUDIO ENGINE ──────────────────────────────────────────────────────
-  // ── THEME ──────────────────────────────────────────────
-  function setTheme(t){ sfx('menu'); state.theme=t; document.body.className=t; $('nesBtn').classList.toggle('active',t==='nes'); $('snesBtn').classList.toggle('active',t==='snes'); stopBgMusic(); if(musicOn) playMusic(t); }
-  function setMode(m){ state.mode=m; document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===m)); $('manualInput').classList.toggle('hidden',m!=='manual'); }
+  function setMode(m){
+    state.mode=m;
+    document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));
+    $('manualInput').classList.toggle('hidden',m!=='manual');
+  }
+  function showMenu(){ $('gameScreen').classList.add('hidden'); $('menuScreen').classList.remove('hidden'); }
+  function showGame(){ $('menuScreen').classList.add('hidden'); $('gameScreen').classList.remove('hidden'); }
 
-  // ── SCREENS ────────────────────────────────────────────
-  function showMenu(){ $('gameScreen').classList.add('hidden'); $('menuScreen').classList.remove('hidden'); stopTimer(); }
-  function showGame(){ $('menuScreen').classList.add('hidden'); $('gameScreen').classList.remove('hidden'); startTimer(); }
-
-  // ── TIMER ──────────────────────────────────────────────
-  function startTimer(){}
-  function stopTimer(){}
-
-  // ── DICE ───────────────────────────────────────────────
-  const DICE=[['M','M','L','L','B','Y'],['V','E','G','K','P','P'],['H','H','N','N','R','R'],['D','F','R','L','L','W'],['R','R','D','L','G','G'],['X','K','B','S','Z','N'],['W','H','H','T','T','P'],['C','C','B','T','J','D'],['C','C','M','T','T','S'],['O','I','I','N','N','Y'],['A','E','I','O','U','U'],['A','A','E','E','O','O']];
+  const DICE=[
+    ['M','M','L','L','B','Y'],['V','E','G','K','P','P'],['H','H','N','N','R','R'],
+    ['D','F','R','L','L','W'],['R','R','D','L','G','G'],['X','K','B','S','Z','N'],
+    ['W','H','H','T','T','P'],['C','C','B','T','J','D'],['C','C','M','T','T','S'],
+    ['O','I','I','N','N','Y'],['A','E','I','O','U','U'],['A','A','E','E','O','O']
+  ];
   function rollLetters(){ return DICE.map(d=>d[Math.floor(Math.random()*d.length)]); }
 
-  // ── RENDER TRAY ────────────────────────────────────────
   function renderTray(){
-    const tray = $('tray'); tray.innerHTML='';
+    const tray=$('tray'); tray.innerHTML='';
     state.letters.forEach((l,i)=>{
-      const usedInCell = Object.values(state.placed).find(p=>p.dieIdx===i);
-      const div = document.createElement('div');
-      div.className='die '+(usedInCell?'used':'available')+(state.selected===i?' selected':'');
+      const used=Object.values(state.placed).some(p=>p.dieIdx===i);
+      const div=document.createElement('div');
+      div.className='die '+(used?'used':'available')+(state.selected===i?' selected':'');
       div.textContent=l; div.dataset.idx=i;
-      if(!usedInCell){
-        div.addEventListener('click',()=>selectDie(i));
-        div.addEventListener('touchstart',onDieTouchStart,{passive:false});
-        div.addEventListener('mousedown',onDieMouseDown);
-      }
+      if(!used){ div.addEventListener('pointerdown', onDiePointerDown); }
       tray.appendChild(div);
     });
     $('placedCount').textContent=Object.keys(state.placed).length;
     $('placedScore').textContent=Object.keys(state.placed).length;
   }
-
-  function selectDie(i){ sfx('select');
-    state.selected = (state.selected===i) ? null : i;
-    renderTray();
-    if(state.selected!==null){ $('statusBar').textContent='Tap a board cell to place "'+state.letters[i]+'"'; $('statusBar').classList.remove('hidden'); }
-    else { $('statusBar').classList.add('hidden'); }
-  }
-
-  // ── RENDER BOARD ───────────────────────────────────────
   function renderBoard(){
-    const board=$('board');
-    board.style.gridTemplateColumns=`repeat(${GRID_COLS},46px)`;
-    board.innerHTML='';
+    const board=$('board'); board.innerHTML='';
     for(let r=0;r<GRID_ROWS;r++){
       for(let c=0;c<GRID_COLS;c++){
         const key=r+','+c;
@@ -374,150 +401,175 @@ hr { border:none; border-top:1px solid var(--border); margin:12px 0; }
         cell.className='cell'+(state.placed[key]?' filled':'')+(state.selectedCell===key?' selected-cell':'');
         cell.dataset.key=key;
         if(state.placed[key]){
-          const span=document.createElement('span'); span.className='letter'; span.textContent=state.placed[key].letter;
+          const span=document.createElement('span'); span.className='letter';
+          span.textContent=state.placed[key].letter;
           cell.appendChild(span);
-          const rm=document.createElement('span'); rm.className='rm'; rm.textContent='✕';
-          rm.addEventListener('click',(e)=>{ e.stopPropagation(); removePlaced(key); });
-          cell.appendChild(rm);
         }
-        cell.addEventListener('click',()=>onCellClick(key));
-        cell.setAttribute('draggable', state.placed[key] ? 'true' : 'false');
-        cell.addEventListener('dragstart',e=>{
-          if(state.placed[key]){ e.dataTransfer.setData('fromCell',key); cell.classList.add('dragging'); }
-          else { e.preventDefault(); }
-        });
-        cell.addEventListener('dragend',e=>{ cell.classList.remove('dragging'); });
-        cell.addEventListener('dragover',e=>{e.preventDefault();cell.classList.add('drop-target');});
-        cell.addEventListener('dragleave',()=>cell.classList.remove('drop-target'));
-        cell.addEventListener('drop',e=>{e.preventDefault();cell.classList.remove('drop-target');onDropCell(key,e);});
-        cell.addEventListener('touchend',e=>onCellTouchEnd(key,e),{passive:false});
-        if(state.placed[key]){
-          cell.addEventListener('touchstart',e=>onCellTouchStart(key,e),{passive:false});
-        }
+        cell.addEventListener('pointerdown', onCellPointerDown);
         board.appendChild(cell);
       }
     }
   }
+  let drag=null;
+  function makeGhost(letter){
+    const g=document.createElement('div');
+    g.className='drag-ghost die available';
+    g.textContent=letter;
+    document.body.appendChild(g);
+    return g;
+  }
+  function moveGhost(g,x,y){ g.style.left=x+'px'; g.style.top=y+'px'; }
+  function targetCellAt(x,y){
+    const el=document.elementFromPoint(x,y);
+    return el && el.closest('.cell');
+  }
+  function clearDropHighlight(){
+    if(drag && drag.lastTarget){ drag.lastTarget.classList.remove('drop-target'); drag.lastTarget=null; }
+  }
 
-  function onCellClick(key){
-    if(state.selectedCell){
-      // a placed tile is already selected — move it to new cell
-      if(key===state.selectedCell){ clearCellSelection(); return; }
-      if(!state.placed[key]){
-        // move to empty cell
-        state.placed[key]=state.placed[state.selectedCell];
-        delete state.placed[state.selectedCell];
-        clearCellSelection();
-        renderBoard();
-      } else {
-        // swap two placed tiles
-        const tmp=state.placed[key];
-        state.placed[key]=state.placed[state.selectedCell];
-        state.placed[state.selectedCell]=tmp;
-        clearCellSelection();
-        renderBoard();
-      }
-    } else if(state.selected!==null && !state.placed[key]){
-      // die from tray selected — place it
+  function onDiePointerDown(e){
+    unlockAudio();
+    const idx=parseInt(e.currentTarget.dataset.idx);
+    e.preventDefault();
+    try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
+    drag={fromTrayIdx:idx, ghost:makeGhost(state.letters[idx]), lastTarget:null, moved:false, startX:e.clientX, startY:e.clientY};
+    e.currentTarget.classList.add('dragging');
+    moveGhost(drag.ghost, e.clientX, e.clientY);
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp, {once:true});
+    document.addEventListener('pointercancel', onPointerUp, {once:true});
+  }
+
+  function onCellPointerDown(e){
+    unlockAudio();
+    const key=e.currentTarget.dataset.key;
+    const placed = state.placed[key];
+
+    // Double-tap on a placed die returns it to the tray
+    const now=Date.now();
+    if(placed && state._lastCellTap.key===key && now-state._lastCellTap.t<350){
+      removePlaced(key);
+      state._lastCellTap={key:null,t:0};
+      return;
+    }
+    state._lastCellTap = placed ? {key,t:now} : {key:null,t:0};
+
+    if(state.selected!==null && !placed){
       placeDie(state.selected, key);
-    } else if(state.placed[key]){
-      // pick up a placed tile to move it
-      state.selectedCell=key;
-      state.selected=null;
-      renderTray(); renderBoard();
-      $('statusBar').textContent='Tap another cell to move "'+state.placed[key].letter+'" — tap same cell to cancel.';
-      $('statusBar').classList.remove('hidden');
+      return;
+    }
+    if(state.selectedCell){
+      if(key===state.selectedCell){ clearCellSelection(); return; }
+      moveOrSwap(state.selectedCell, key);
+      clearCellSelection();
+      return;
+    }
+    if(placed){
+      e.preventDefault();
+      try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
+      drag={fromCellKey:key, ghost:makeGhost(placed.letter), lastTarget:null, moved:false, startX:e.clientX, startY:e.clientY};
+      moveGhost(drag.ghost, e.clientX, e.clientY);
+      document.addEventListener('pointermove', onPointerMove);
+      document.addEventListener('pointerup', onPointerUp, {once:true});
+      document.addEventListener('pointercancel', onPointerUp, {once:true});
     }
   }
-  function clearCellSelection(){ state.selectedCell=null; $('statusBar').classList.add('hidden'); }
 
-  function placeDie(idx, key){ sfx('place');
+  function onPointerMove(e){
+    if(!drag) return;
+    if(!drag.moved){
+      const dx=e.clientX-drag.startX, dy=e.clientY-drag.startY;
+      if(dx*dx+dy*dy < 36) return;
+      drag.moved=true;
+    }
+    moveGhost(drag.ghost, e.clientX, e.clientY);
+    const t = targetCellAt(e.clientX, e.clientY);
+    if(t!==drag.lastTarget){
+      clearDropHighlight();
+      if(t){
+        const occ = state.placed[t.dataset.key];
+        if(!occ || drag.fromCellKey){
+          t.classList.add('drop-target');
+          drag.lastTarget=t;
+        }
+      }
+    }
+  }
+
+  function onPointerUp(e){
+    document.removeEventListener('pointermove', onPointerMove);
+    if(!drag) return;
+    const d = drag;
+    const target = drag.lastTarget;
+    clearDropHighlight();
+    if(drag.ghost){ drag.ghost.remove(); }
+    document.querySelectorAll('.die.dragging').forEach(x=>x.classList.remove('dragging'));
+    drag=null;
+
+    if(!d.moved){
+      if(d.fromTrayIdx!=null){
+        selectDie(d.fromTrayIdx);
+      } else if(d.fromCellKey){
+        state.selectedCell = d.fromCellKey;
+        state.selected = null;
+        renderTray(); renderBoard();
+        $('statusBar').textContent='Tap another cell to move "'+state.placed[d.fromCellKey].letter+'" — tap same cell to cancel.';
+        $('statusBar').classList.remove('hidden');
+      }
+      return;
+    }
+
+    if(!target) return;
+    const key=target.dataset.key;
+    if(d.fromTrayIdx!=null){
+      if(!state.placed[key]) placeDie(d.fromTrayIdx, key);
+    } else if(d.fromCellKey){
+      if(d.fromCellKey===key) return;
+      moveOrSwap(d.fromCellKey, key);
+    }
+  }
+
+  function moveOrSwap(fromKey, toKey){
+    sfx('move');
+    if(!state.placed[toKey]){
+      state.placed[toKey]=state.placed[fromKey];
+      delete state.placed[fromKey];
+    } else {
+      const tmp=state.placed[toKey];
+      state.placed[toKey]=state.placed[fromKey];
+      state.placed[fromKey]=tmp;
+    }
+    renderTray(); renderBoard();
+  }
+
+  function selectDie(i){
+    sfx('select');
+    state.selected = (state.selected===i) ? null : i;
+    renderTray();
+    if(state.selected!==null){
+      $('statusBar').textContent='Tap a board cell to place "'+state.letters[i]+'"';
+      $('statusBar').classList.remove('hidden');
+    } else {
+      $('statusBar').classList.add('hidden');
+    }
+  }
+  function clearCellSelection(){ state.selectedCell=null; $('statusBar').classList.add('hidden'); renderBoard(); }
+  function placeDie(idx, key){
+    sfx('place');
     state.placed[key]={letter:state.letters[idx], dieIdx:idx};
     state.selected=null;
     renderTray(); renderBoard();
     $('statusBar').classList.add('hidden');
   }
-
-  function removePlaced(key){ sfx('remove');
+  function removePlaced(key){
+    sfx('remove');
     delete state.placed[key];
     renderTray(); renderBoard();
   }
-
-  // ── DRAG MOUSE ─────────────────────────────────────────
-  let dragDieIdx=null;
-  function onDieMouseDown(e){ dragDieIdx=parseInt(e.currentTarget.dataset.idx); e.currentTarget.classList.add('dragging'); e.currentTarget.setAttribute('draggable','true'); e.currentTarget.addEventListener('dragend',onDragEnd,{once:true}); e.currentTarget.addEventListener('dragstart',onDragStart); }
-  function onDragStart(e){ e.dataTransfer.setData('dieIdx',e.currentTarget.dataset.idx); }
-  function onDragEnd(e){ e.target.classList.remove('dragging'); e.target.removeAttribute('draggable'); dragDieIdx=null; }
-  function onDrop(key, e){ const idx=parseInt(e.dataTransfer.getData('dieIdx')); if(!isNaN(idx)&&!state.placed[key]) placeDie(idx,key); }
-  function onDropCell(key, e){
-    const fromCell=e.dataTransfer.getData('fromCell');
-    const dieIdx=e.dataTransfer.getData('dieIdx');
-    if(fromCell && fromCell!==key){
-      if(!state.placed[key]){ state.placed[key]=state.placed[fromCell]; delete state.placed[fromCell]; }
-      else { const tmp=state.placed[key]; state.placed[key]=state.placed[fromCell]; state.placed[fromCell]=tmp; }
-      renderTray(); renderBoard();
-    } else if(dieIdx!=='' && !state.placed[key]){
-      placeDie(parseInt(dieIdx), key);
-    }
-  }
-
-  // ── DRAG TOUCH ─────────────────────────────────────────
-  let touchDieIdx=null, touchClone=null;
-  function onDieTouchStart(e){
-    touchDieIdx=parseInt(e.currentTarget.dataset.idx);
-    const die=e.currentTarget;
-    touchClone=die.cloneNode(true);
-    touchClone.style.cssText='position:fixed;pointer-events:none;opacity:.8;z-index:9999;transform:scale(1.15);transition:none;';
-    document.body.appendChild(touchClone);
-    moveTouchClone(e.touches[0]);
-    document.addEventListener('touchmove',onTouchMove,{passive:false});
-    document.addEventListener('touchend',onTouchEnd,{once:true});
-    e.preventDefault();
-  }
-  function moveTouchClone(t){ if(!touchClone) return; touchClone.style.left=(t.clientX-28)+'px'; touchClone.style.top=(t.clientY-28)+'px'; }
-  function onTouchMove(e){ moveTouchClone(e.touches[0]); e.preventDefault(); }
-  function onTouchEnd(e){
-    document.removeEventListener('touchmove',onTouchMove);
-    if(touchClone){ touchClone.remove(); touchClone=null; }
-    const t=e.changedTouches[0];
-    const el=document.elementFromPoint(t.clientX,t.clientY);
-    const cell=el&&el.closest('.cell');
-    if(cell&&touchDieIdx!==null&&!state.placed[cell.dataset.key]) placeDie(touchDieIdx,cell.dataset.key);
-    touchDieIdx=null;
-  }
-  function onCellTouchEnd(key,e){ /* handled by onTouchEnd above */ }
-  function onCellTouchStart(key,e){
-    if(!state.placed[key]) return;
-    touchDieIdx=null; // not from tray
-    state._touchFromCell=key;
-    const cell=e.currentTarget;
-    touchClone=cell.cloneNode(true);
-    touchClone.style.cssText='position:fixed;pointer-events:none;opacity:.85;z-index:9999;transform:scale(1.15);transition:none;width:46px;height:46px;border-radius:8px;background:rgba(46,230,166,.3);display:grid;place-items:center;font-weight:800;font-size:18px;color:var(--ink)';
-    touchClone.textContent=state.placed[key].letter;
-    document.body.appendChild(touchClone);
-    moveTouchClone(e.touches[0]);
-    document.addEventListener('touchmove',onTouchMove,{passive:false});
-    document.addEventListener('touchend',onCellTouchDrop,{once:true});
-    e.preventDefault();
-  }
-  function onCellTouchDrop(e){
-    document.removeEventListener('touchmove',onTouchMove);
-    if(touchClone){ touchClone.remove(); touchClone=null; }
-    const t=e.changedTouches[0];
-    const el=document.elementFromPoint(t.clientX,t.clientY);
-    const targetCell=el&&el.closest('.cell');
-    const fromKey=state._touchFromCell;
-    state._touchFromCell=null;
-    if(!targetCell||!fromKey||targetCell.dataset.key===fromKey) return;
-    const toKey=targetCell.dataset.key;
-    if(!state.placed[toKey]){ state.placed[toKey]=state.placed[fromKey]; delete state.placed[fromKey]; }
-    else { const tmp=state.placed[toKey]; state.placed[toKey]=state.placed[fromKey]; state.placed[fromKey]=tmp; }
-    renderTray(); renderBoard();
-  }
-
-  // ── GAME START ─────────────────────────────────────────
   function startGame(letters, puzzleNum){
-    state.letters=letters; state.placed={}; state.selected=null; state.hintN=0; state.hintCount=0;
+    state.letters=letters; state.placed={};
+    state.selected=null; state.selectedCell=null;
+    state.hintN=0; state.hintCount=0;
     $('puzzleNum').textContent='#'+puzzleNum;
     $('hintBox').textContent=''; $('hintCount').textContent='0';
     renderTray(); renderBoard();
@@ -525,8 +577,8 @@ hr { border:none; border-top:1px solid var(--border); margin:12px 0; }
     showGame();
   }
 
-  // ── DAILY PUZZLE ───────────────────────────────────────
-  async function loadDaily(){ sfx('menu');
+  async function loadDaily(){
+    sfx('menu');
     $('menuDiag').textContent='Loading...';
     try{
       const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),30000);
@@ -535,7 +587,7 @@ hr { border:none; border-top:1px solid var(--border); margin:12px 0; }
       if(!r.ok) throw new Error('HTTP '+r.status);
       const p=await r.json();
       state.puzzle=p;
-      $('cluesList').innerHTML=p.clues.map(c=>`<div style="margin:4px 0"><strong>${c.word}</strong> — ${c.clue}</div>`).join('');
+      $('cluesList').innerHTML=(p.clues||[]).map(c=>`<div style="margin:4px 0"><strong>${c.word}</strong> — ${c.clue}</div>`).join('');
       startGame(p.letters, p.puzzle_number);
       $('menuDiag').textContent='Loaded puzzle #'+p.puzzle_number;
     }catch(e){
@@ -544,11 +596,9 @@ hr { border:none; border-top:1px solid var(--border); margin:12px 0; }
       alert('Could not load puzzle: '+m);
     }
   }
-
-  // ── CLASSIC MODE ───────────────────────────────────────
-  function startClassic(){ sfx('roll');
-    const m=state.mode;
-    if(m==='manual'){
+  function startClassic(){
+    sfx('roll');
+    if(state.mode==='manual'){
       const raw=($('manualLetters').value||'').toUpperCase().replace(/[^A-Z]/g,'');
       if(raw.length!==12){ alert('Please enter exactly 12 letters.'); return; }
       state.puzzle=null;
@@ -561,12 +611,11 @@ hr { border:none; border-top:1px solid var(--border); margin:12px 0; }
       startGame(letters, 'classic');
     }
   }
-
-  // ── HINT ───────────────────────────────────────────────
-  async function getHint(){ sfx('hint');
+  async function getHint(){
+    sfx('hint');
     state.hintCount++;
     $('hintCount').textContent=state.hintCount;
-    if(!state.puzzle){ $('hintBox').textContent='Hint #'+state.hintCount+': try placing the less common letters first.'; return; }
+    if(!state.puzzle){ $('hintBox').textContent='Hint #'+state.hintCount+': try placing less common letters first.'; return; }
     try{
       const w=state.puzzle.clues?.[0]?.word||'WORD';
       const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),15000);
@@ -577,42 +626,49 @@ hr { border:none; border-top:1px solid var(--border); margin:12px 0; }
       $('hintBox').textContent=j.hint;
     }catch(e){ $('hintBox').textContent='Hint #'+state.hintCount+': try placing longer words first.'; }
   }
-
-  // ── VALIDATE ───────────────────────────────────────────
-  function validate(){ sfx('validate');
+  function validate(){
+    sfx('validate');
     const placed=state.placed;
     const total=Object.keys(placed).length;
-    if(total<12){ $('statusBar').textContent='Place all 12 letters before validating. ('+total+'/12 placed)'; $('statusBar').classList.remove('hidden'); return; }
-    // collect rows and cols of placed cells
-    const cells=Object.entries(placed).map(([k,v])=>({r:parseInt(k),c:parseInt(k.split(',')[1]),letter:v.letter}));
-    // Simple word extraction — scan rows then cols
-    const gridMap={}; cells.forEach(c=>{ gridMap[c.r+','+c.c]=c.letter; });
+    if(total<12){
+      $('statusBar').textContent='Place all 12 letters before validating. ('+total+'/12 placed)';
+      $('statusBar').classList.remove('hidden'); return;
+    }
+    const gridMap={}; Object.entries(placed).forEach(([k,v])=>{ gridMap[k]=v.letter; });
     const words=[];
     for(let r=0;r<GRID_ROWS;r++){
-      let w=''; for(let c=0;c<GRID_COLS;c++){ const l=gridMap[r+','+c]; if(l){ w+=l; }else{ if(w.length>=3) words.push(w); w=''; } } if(w.length>=3) words.push(w);
+      let w=''; for(let c=0;c<GRID_COLS;c++){
+        const l=gridMap[r+','+c];
+        if(l){ w+=l; } else { if(w.length>=3) words.push(w); w=''; }
+      }
+      if(w.length>=3) words.push(w);
     }
     for(let c=0;c<GRID_COLS;c++){
-      let w=''; for(let r=0;r<GRID_ROWS;r++){ const l=gridMap[r+','+c]; if(l){ w+=l; }else{ if(w.length>=3) words.push(w); w=''; } } if(w.length>=3) words.push(w);
+      let w=''; for(let r=0;r<GRID_ROWS;r++){
+        const l=gridMap[r+','+c];
+        if(l){ w+=l; } else { if(w.length>=3) words.push(w); w=''; }
+      }
+      if(w.length>=3) words.push(w);
     }
-    const twoLetter=Object.values(placed).map(p=>p.letter).join('');
-    // Check: all letters used, words found, no isolated single letters
-    if(words.length===0){ $('statusBar').textContent='No valid words found. Letters must form connected words.'; $('statusBar').classList.remove('hidden'); return; }
-    $('statusBar').textContent='Words found: '+words.join(', ')+' — well done!';
+    if(words.length===0){
+      $('statusBar').textContent='No valid runs of 3+ letters. Letters must form connected words.';
+    } else {
+      $('statusBar').textContent='Words found: '+words.join(', ')+' — nice work!';
+    }
     $('statusBar').classList.remove('hidden');
   }
+  function clearBoard(){
+    sfx('clear');
+    state.placed={}; state.selected=null; state.selectedCell=null;
+    renderTray(); renderBoard();
+    $('statusBar').classList.add('hidden');
+  }
 
-  // ── CLEAR ──────────────────────────────────────────────
-  function clearBoard(){ sfx('clear'); state.placed={}; state.selected=null; state.selectedCell=null; renderTray(); renderBoard(); $('statusBar').classList.add('hidden'); }
-
-  // ── INIT ───────────────────────────────────────────────
   window.addEventListener('DOMContentLoaded',()=>{
     $('nesBtn').onclick=()=>setTheme('nes');
+    $('snesBtn').onclick=()=>setTheme('snes');
     $('musicBtn').onclick=toggleMusic;
     $('soundBtn').onclick=toggleSound;
-    $('musicBtn').textContent='♪ OFF';
-    $('soundBtn').textContent='SFX ON';
-    $('soundBtn').style.opacity='1';
-    $('snesBtn').onclick=()=>setTheme('snes');
     document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
     $('startClassic').onclick=startClassic;
     $('loadDaily').onclick=loadDaily;
@@ -620,7 +676,11 @@ hr { border:none; border-top:1px solid var(--border); margin:12px 0; }
     $('clearBtn').onclick=clearBoard;
     $('validateBtn').onclick=validate;
     $('hintBtn').onclick=getHint;
-    document.body.className='nes'; setMode('classic'); stopBgMusic(); musicOn=false; soundOn=true; $('musicBtn').textContent='♪ OFF'; $('soundBtn').textContent='SFX ON';
+    document.body.className='nes';
+    setMode('classic');
+    musicOn=false; soundOn=true;
+    $('musicBtn').textContent='♪ OFF';
+    $('soundBtn').textContent='SFX ON';
   });
 })();
 </script>
