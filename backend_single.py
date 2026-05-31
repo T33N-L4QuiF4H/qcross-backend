@@ -4,23 +4,14 @@ from pydantic import BaseModel
 from typing import List, Tuple
 import random, datetime, hashlib, os
 
-from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI(title="Q~Cross API")
-app.add_middleware(
-    CORSMiddleware,
-allow_origins=["*"],
-
-    allow_credentials=False,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["*"],
-)
 
 # ── Core helpers ─────────────────────────────────────────────────────────────
 DICE = [
-    ["A","E","I","O","U","Y"], ["A","C","H","O","P","S"], ["A","D","E","I","N","R"],
-    ["A","D","E","I","N","R"], ["B","C","D","E","F","G"], ["E","H","I","N","O","T"],
-    ["E","I","K","L","O","T"], ["E","I","N","Q","S","U"], ["E","L","M","N","O","S"],
-    ["G","I","L","N","O","U"], ["I","N","O","R","S","T"], ["M","P","R","S","T","U"],
+    ["M","M","L","L","B","Y"], ["V","E","G","K","P","P"], ["H","H","N","N","R","R"],
+    ["D","F","R","L","L","W"], ["R","R","D","L","G","G"], ["X","K","B","S","Z","N"],
+    ["W","H","H","T","T","P"], ["C","C","B","T","J","D"], ["C","C","M","T","T","S"],
+    ["O","I","I","N","N","Y"], ["A","E","I","O","U","U"], ["A","A","E","E","O","O"],
 ]
 
 MIN_WORD_LEN = 3
@@ -44,7 +35,7 @@ def load_wordset():
     if WORDSET is not None:
         return WORDSET
     words = set(FALLBACK_WORDS)
-    path = os.environ.get("QCROSS_WORDLIST", "enable1.txt")
+    path = os.environ.get("QCROSS_WORDLIST", "")
     if path and os.path.exists(path):
         try:
             with open(path, "r", encoding="utf-8") as f:
