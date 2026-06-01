@@ -169,6 +169,8 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
 .challenge-found{font-weight:bold;color:var(--good);margin-left:6px;}
 body.nes .cell.locked{background:#051a05;border:3px solid var(--good);box-shadow:inset 0 0 0 1px var(--good);}
 body.snes .cell.locked{background:rgba(46,230,166,.18);border-color:var(--good);box-shadow:0 0 10px rgba(46,230,166,.35);}
+body.nes .die.available.found-tray{border-color:var(--good);box-shadow:0 0 0 2px var(--good),3px 3px 0 #000;}
+body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 2px 0 rgba(255,255,180,.8),0 6px 0 #3a6a10,2px 8px 16px rgba(0,0,0,.5),0 0 8px rgba(46,230,166,.5);}
 </style>
 </head>
 <body class="nes">
@@ -278,9 +280,10 @@ body.snes .cell.locked{background:rgba(46,230,166,.18);border-color:var(--good);
     _lastCellTap:{key:null,t:0},
     challenge:{active:false,words:[],clues:[],wordLengths:[],wordCount:0,
                score:1000,extraHints:[],wordsRevealed:[],
-               lockedWordKeys:[],wordsFound:[],movingWord:null},
+               lockedWordKeys:[],wordsFound:[],movingWord:null,foundDieIndices:[]},
   };
 
+  let _lockedTapTimer=null, _lockedTapKey=null;
   let audioCtx=null, musicNode=null, musicTimer=null;
   let musicOn=false, soundOn=true, audioUnlocked=false;
 
@@ -407,11 +410,15 @@ body.snes .cell.locked{background:rgba(46,230,166,.18);border-color:var(--good);
   function rollLetters(){ return DICE.map(d=>d[Math.floor(Math.random()*d.length)]); }
 
   function renderTray(){
+    const ch=state.challenge;
+    const movingDice=new Set(ch.active&&ch.movingWord ? ch.movingWord.tiles.map(t=>t.dieIdx) : []);
+    const foundDice=new Set(ch.active ? ch.foundDieIndices : []);
     const tray=$('tray'); tray.innerHTML='';
     state.letters.forEach((l,i)=>{
-      const used=Object.values(state.placed).some(p=>p.dieIdx===i);
+      const used=Object.values(state.placed).some(p=>p.dieIdx===i)||movingDice.has(i);
+      const foundInTray=!used&&foundDice.has(i);
       const div=document.createElement('div');
-      div.className='die '+(used?'used':'available')+(state.selected===i?' selected':'');
+      div.className='die '+(used?'used':'available')+(state.selected===i?' selected':'')+(foundInTray?' found-tray':'');
       div.textContent=l; div.dataset.idx=i;
       if(!used){ div.addEventListener('pointerdown', onDiePointerDown); }
       tray.appendChild(div);
@@ -493,10 +500,21 @@ body.snes .cell.locked{background:rgba(46,230,166,.18);border-color:var(--good);
     }
     state._lastCellTap = placed ? {key,t:now} : {key:null,t:0};
 
-    // Challenge: tapping a locked tile picks up the whole word
+    // Challenge: locked tile — double-tap returns to tray, single tap picks up after 300ms
     if(state.challenge.active && placed){
       const lockedIdx=state.challenge.lockedWordKeys.findIndex(ks=>ks&&ks.includes(key));
-      if(lockedIdx>=0){ e.preventDefault(); pickUpLockedWord(lockedIdx); return; }
+      if(lockedIdx>=0){
+        e.preventDefault();
+        if(_lockedTapKey===key && _lockedTapTimer){
+          clearTimeout(_lockedTapTimer); _lockedTapTimer=null; _lockedTapKey=null;
+          returnLockedWordToTray(lockedIdx);
+        } else {
+          if(_lockedTapTimer){ clearTimeout(_lockedTapTimer); }
+          _lockedTapKey=key;
+          _lockedTapTimer=setTimeout(()=>{ _lockedTapTimer=null; _lockedTapKey=null; pickUpLockedWord(lockedIdx); }, 300);
+        }
+        return;
+      }
     }
 
     if(state.selected!==null && !placed){
@@ -827,6 +845,7 @@ body.snes .cell.locked{background:rgba(46,230,166,.18);border-color:var(--good);
       if(match){
         ch.lockedWordKeys[i]=match.keys;
         ch.wordsFound[i]=true;
+        match.keys.forEach(k=>{ if(state.placed[k]) ch.foundDieIndices.add(state.placed[k].dieIdx); });
         newLock=true;
         sfx('validate');
       }
@@ -867,6 +886,19 @@ body.snes .cell.locked{background:rgba(46,230,166,.18);border-color:var(--good);
     ch.movingWord=null;
     renderTray(); renderBoard(); renderChallengePanel();
     $('statusBar').classList.add('hidden');
+  }
+
+  function returnLockedWordToTray(wordIdx){
+    const ch=state.challenge;
+    const keys=ch.lockedWordKeys[wordIdx];
+    if(!keys) return;
+    keys.forEach(k=>delete state.placed[k]);
+    ch.lockedWordKeys[wordIdx]=null;
+    ch.wordsFound[wordIdx]=false;
+    sfx('remove');
+    renderTray(); renderBoard(); renderChallengePanel();
+    $('statusBar').textContent='"'+ch.words[wordIdx]+'" returned to tray — tiles are highlighted green.';
+    $('statusBar').classList.remove('hidden');
   }
 
   function placeMovingWord(targetKey){
@@ -925,6 +957,10 @@ body.snes .cell.locked{background:rgba(46,230,166,.18);border-color:var(--good);
     document.querySelectorAll('.ask-will-btn').forEach(b=>b.onclick=()=>askWill(+b.dataset.i));
     document.querySelectorAll('.reveal-word-btn').forEach(b=>b.onclick=()=>revealWord(+b.dataset.i));
     $('revealAllBtn').classList.toggle('hidden', ch.wordsRevealed.every(r=>r));
+    const anyFound=ch.wordsFound.some(f=>f);
+    let guide=$('challengeGuide');
+    if(!guide){ guide=document.createElement('div'); guide.id='challengeGuide'; guide.className='sub'; guide.style.marginTop='8px'; $('challengeClues').after(guide); }
+    guide.textContent=anyFound?'Tap a locked word to move it — double-tap to return its tiles to the tray.':'';
   }
 
   async function startChallenge(){
@@ -950,6 +986,7 @@ body.snes .cell.locked{background:rgba(46,230,166,.18);border-color:var(--good);
         lockedWordKeys:p.words.map(()=>null),
         wordsFound:p.words.map(()=>false),
         movingWord:null,
+        foundDieIndices:new Set(),
       };
       startGame(p.letters,'challenge');
       $('menuDiag').textContent='Challenge loaded!';
@@ -1010,6 +1047,7 @@ body.snes .cell.locked{background:rgba(46,230,166,.18);border-color:var(--good);
       ch.lockedWordKeys=ch.words.map(()=>null);
       ch.wordsFound=ch.words.map(()=>false);
       ch.movingWord=null;
+      ch.foundDieIndices=new Set();
       renderChallengePanel();
     }
     renderTray(); renderBoard();
