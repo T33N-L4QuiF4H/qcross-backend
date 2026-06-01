@@ -162,6 +162,10 @@ button{appearance:none;cursor:pointer;touch-action:manipulation;font:inherit;}
 #menuScreen{max-width:720px;margin:24px auto 0;}
 input{width:100%;padding:10px;border:1px solid var(--border);background:#111;color:var(--ink);font-size:14px;}
 hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
+.challenge-word{border-top:1px solid var(--border);padding:8px 0;}
+.challenge-clue{font-size:12px;margin:4px 0 6px;line-height:1.5;}
+.challenge-extra-hint{font-size:11px;color:var(--muted);margin:2px 0;font-style:italic;}
+.challenge-revealed{font-weight:bold;color:var(--good);margin-left:6px;}
 </style>
 </head>
 <body class="nes">
@@ -207,7 +211,7 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
     </div>
     <div class="row" style="margin-top:12px">
       <button id="startClassic" class="good">Roll Virtual Dice</button>
-      <button id="loadDaily" class="primary">Load Today's Puzzle</button>
+      <button id="loadDaily" class="primary">Challenge Mode</button>
     </div>
     <div class="footer" id="menuDiag">Ready.</div>
   </div>
@@ -234,14 +238,25 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
           <button id="validateBtn" class="good">Validate Solution</button>
           <button id="hintBtn">Hint</button>
         </div>
-        <div id="hintBox"></div>
-        <hr/>
-        <strong>Clues / Letters</strong>
-        <div id="cluesList" style="margin-top:8px;font-size:13px"></div>
-        <hr/>
-        <div class="score-row">
-          <div class="score-item"><div class="val" id="hintCount">0</div><div class="lbl">Hints</div></div>
-          <div class="score-item"><div class="val" id="placedScore">0</div><div class="lbl">Placed</div></div>
+        <div id="classicPanel">
+          <div id="hintBox"></div>
+          <hr/>
+          <strong>Clues / Letters</strong>
+          <div id="cluesList" style="margin-top:8px;font-size:13px"></div>
+          <hr/>
+          <div class="score-row">
+            <div class="score-item"><div class="val" id="hintCount">0</div><div class="lbl">Hints</div></div>
+            <div class="score-item"><div class="val" id="placedScore">0</div><div class="lbl">Placed</div></div>
+          </div>
+        </div>
+        <div id="challengePanel" class="hidden">
+          <hr/>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <strong id="challengeTitle">Challenge</strong>
+            <div class="score-item"><div class="val" id="challengeScore">1000</div><div class="lbl">Score</div></div>
+          </div>
+          <div id="challengeClues"></div>
+          <button id="revealAllBtn" class="danger" style="width:100%;margin-top:8px">Reveal All Words (−400 pts)</button>
         </div>
       </div>
     </div>
@@ -258,6 +273,8 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
     selected:null, selectedCell:null, hintN:0, hintCount:0,
     _lastDieTap:{idx:null,t:0},
     _lastCellTap:{key:null,t:0},
+    challenge:{active:false,words:[],clues:[],wordLengths:[],wordCount:0,
+               score:1000,extraHints:[],wordsRevealed:[]},
   };
 
   let audioCtx=null, musicNode=null, musicTimer=null;
@@ -370,7 +387,10 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
     document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));
     $('manualInput').classList.toggle('hidden',m!=='manual');
   }
-  function showMenu(){ $('gameScreen').classList.add('hidden'); $('menuScreen').classList.remove('hidden'); }
+  function showMenu(){
+    state.challenge.active=false;
+    $('gameScreen').classList.add('hidden'); $('menuScreen').classList.remove('hidden');
+  }
   function showGame(){ $('menuScreen').classList.add('hidden'); $('gameScreen').classList.remove('hidden'); }
 
   const DICE=[
@@ -622,6 +642,11 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
     $('hintBox').textContent=''; $('hintCount').textContent='0';
     renderTray(); renderBoard();
     $('statusBar').classList.add('hidden');
+    const ch=state.challenge.active;
+    $('hintBtn').classList.toggle('hidden',ch);
+    $('classicPanel').classList.toggle('hidden',ch);
+    $('challengePanel').classList.toggle('hidden',!ch);
+    if(ch) renderChallengePanel();
     showGame();
   }
 
@@ -646,6 +671,7 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
   }
   function startClassic(){
     sfx('roll');
+    state.challenge.active=false;
     if(state.mode==='manual'){
       const raw=($('manualLetters').value||'').toUpperCase().replace(/[^A-Z]/g,'');
       if(raw.length!==12){ alert('Please enter exactly 12 letters.'); return; }
@@ -752,10 +778,113 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
     const good=words.filter(w=>ws.has(w.toLowerCase()));
     if(bad.length){
       $('statusBar').textContent='Not in word list: '+bad.join(', ')+'. Keep trying!';
+    } else if(state.challenge.active){
+      $('statusBar').textContent='Solved! Words: '+good.join(', ')+' — Final score: '+state.challenge.score+' pts!';
     } else {
       $('statusBar').textContent='All words valid: '+good.join(', ')+'!';
     }
   }
+  function renderChallengePanel(){
+    const ch=state.challenge;
+    $('challengeTitle').textContent='Challenge — '+ch.wordCount+' word'+(ch.wordCount!==1?'s':'');
+    $('challengeScore').textContent=ch.score;
+    const el=$('challengeClues'); el.innerHTML='';
+    ch.words.forEach((word,i)=>{
+      const revealed=ch.wordsRevealed[i];
+      const hints=(ch.extraHints[i]||[]);
+      const div=document.createElement('div');
+      div.className='challenge-word';
+      div.innerHTML=
+        '<div class="sub" style="margin-bottom:4px">Word '+(i+1)+
+          ' &middot; '+ch.wordLengths[i]+' letters'+
+          (revealed?'<span class="challenge-revealed">'+word+'</span>':'')+
+        '</div>'+
+        '<div class="challenge-clue">'+ch.clues[i]+'</div>'+
+        hints.map(h=>'<div class="challenge-extra-hint">&#128161; '+h+'</div>').join('')+
+        (!revealed?
+          '<div class="row" style="margin-top:6px;gap:4px">'+
+            '<button class="primary ask-will-btn" data-i="'+i+'">Ask Will (&#8722;50)</button>'+
+            '<button class="danger reveal-word-btn" data-i="'+i+'">Reveal (&#8722;150)</button>'+
+          '</div>':'');
+      el.appendChild(div);
+    });
+    document.querySelectorAll('.ask-will-btn').forEach(b=>b.onclick=()=>askWill(+b.dataset.i));
+    document.querySelectorAll('.reveal-word-btn').forEach(b=>b.onclick=()=>revealWord(+b.dataset.i));
+    $('revealAllBtn').classList.toggle('hidden', ch.wordsRevealed.every(r=>r));
+  }
+
+  async function startChallenge(){
+    sfx('menu');
+    const btn=$('loadDaily');
+    btn.textContent='Loading...'; btn.disabled=true;
+    $('menuDiag').textContent='Generating challenge puzzle…';
+    try{
+      const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),30000);
+      const r=await fetch(API+'/challenge',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}',signal:ctrl.signal});
+      clearTimeout(t);
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      const p=await r.json();
+      state.challenge={
+        active:true,
+        words:p.words,
+        clues:p.clues,
+        wordLengths:p.word_lengths,
+        wordCount:p.word_count,
+        score:1000,
+        extraHints:p.words.map(()=>[]),
+        wordsRevealed:p.words.map(()=>false),
+      };
+      startGame(p.letters,'challenge');
+      $('menuDiag').textContent='Challenge loaded!';
+    }catch(e){
+      const m=e.name==='AbortError'?'timeout':e.message;
+      $('menuDiag').textContent='Error: '+m;
+      alert('Could not load challenge: '+m);
+    }finally{
+      btn.textContent='Challenge Mode'; btn.disabled=false;
+    }
+  }
+
+  async function askWill(i){
+    const ch=state.challenge;
+    const btn=document.querySelector('.ask-will-btn[data-i="'+i+'"]');
+    if(btn){btn.disabled=true;btn.textContent='Asking…';}
+    try{
+      const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),15000);
+      const r=await fetch(API+'/challenge/hint',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({word:ch.words[i],clue:ch.clues[i],hint_number:(ch.extraHints[i].length+1)}),
+        signal:ctrl.signal
+      });
+      clearTimeout(t);
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      const j=await r.json();
+      ch.extraHints[i].push(j.hint);
+      ch.score=Math.max(0,ch.score-50);
+      sfx('hint');
+      renderChallengePanel();
+    }catch(e){
+      if(btn){btn.disabled=false;btn.textContent='Ask Will (&#8722;50)';}
+    }
+  }
+
+  function revealWord(i){
+    const ch=state.challenge;
+    if(ch.wordsRevealed[i]) return;
+    ch.wordsRevealed[i]=true;
+    ch.score=Math.max(0,ch.score-150);
+    sfx('remove');
+    renderChallengePanel();
+  }
+
+  function revealAllWords(){
+    const ch=state.challenge;
+    ch.wordsRevealed=ch.wordsRevealed.map(()=>true);
+    ch.score=Math.max(0,ch.score-400);
+    sfx('remove');
+    renderChallengePanel();
+  }
+
   function clearBoard(){
     sfx('clear');
     state.placed={}; state.selected=null; state.selectedCell=null;
@@ -770,7 +899,8 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
     $('soundBtn').onclick=toggleSound;
     document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
     $('startClassic').onclick=startClassic;
-    $('loadDaily').onclick=loadDaily;
+    $('loadDaily').onclick=startChallenge;
+    $('revealAllBtn').onclick=revealAllWords;
     $('menuBtn').onclick=showMenu;
     $('clearBtn').onclick=clearBoard;
     $('validateBtn').onclick=validate;
