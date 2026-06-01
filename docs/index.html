@@ -575,7 +575,17 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
     }
   }
   function clearCellSelection(){ state.selectedCell=null; $('statusBar').classList.add('hidden'); renderBoard(); }
+  function isAdjacentToPlaced(key){
+    const [r,c]=key.split(',').map(Number);
+    return [[r-1,c],[r+1,c],[r,c-1],[r,c+1]].some(([nr,nc])=>state.placed[nr+','+nc]);
+  }
   function placeDie(idx, key){
+    if(Object.keys(state.placed).length>0 && !isAdjacentToPlaced(key)){
+      sfx('error');
+      $('statusBar').textContent='Tiles must connect — place next to an existing tile.';
+      $('statusBar').classList.remove('hidden');
+      return;
+    }
     sfx('place');
     state.placed[key]={letter:state.letters[idx], dieIdx:idx};
     state.selected=null;
