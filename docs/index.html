@@ -280,7 +280,7 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
     <div id="manualInput" class="hidden" style="margin-top:10px">
       <div class="row" style="gap:6px;margin-bottom:6px">
         <input id="manualLetters" placeholder="Enter 12 letters e.g. AEIOUYBCDEFG" style="flex:1;min-width:0"/>
-        <button id="scanDiceBtn" style="padding:8px 10px;white-space:nowrap">📷 Scan</button>
+        <button id="scanDiceBtn" style="padding:8px 10px;white-space:nowrap">📷 Upload / Take Photo</button>
       </div>
       <div class="sub" id="scanStatus">Enter letters manually or tap 📷 Scan to photograph your dice.</div>
       <input id="diceImageInput" type="file" accept="image/*" style="display:none"/>
@@ -649,6 +649,43 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
     stopBgMusic();
     if(musicOn) playMusic(t);
   }
+  const DICE_FACES=[
+    ["M","M","L","L","B","Y"],["V","E","G","K","P","P"],["H","H","N","N","R","R"],
+    ["D","F","R","L","L","W"],["R","R","D","L","G","G"],["X","K","B","S","Z","N"],
+    ["W","H","H","T","T","P"],["C","C","B","T","J","D"],["C","C","M","T","T","S"],
+    ["O","I","I","N","N","Y"],["A","E","I","O","U","U"],["A","A","E","E","O","O"]
+  ];
+  function isValidDiceRoll(letters){
+    if(letters.length!==12) return false;
+    // Sort most-constrained letters first for faster backtracking
+    const sorted=[...letters].sort((a,b)=>
+      DICE_FACES.filter(d=>d.includes(a)).length-DICE_FACES.filter(d=>d.includes(b)).length
+    );
+    const used=new Array(12).fill(false);
+    function match(i){
+      if(i===12) return true;
+      for(let d=0;d<12;d++){
+        if(!used[d]&&DICE_FACES[d].includes(sorted[i])){
+          used[d]=true; if(match(i+1)) return true; used[d]=false;
+        }
+      }
+      return false;
+    }
+    return match(0);
+  }
+  function validateManualLetters(){
+    const raw=($('manualLetters').value||'').toUpperCase().replace(/[^A-Z]/g,'').slice(0,12);
+    $('manualLetters').value=raw;
+    const btn=$('startClassic');
+    if(btn._isPhysical){
+      const valid=isValidDiceRoll(raw.split(''));
+      btn.disabled=!valid;
+      $('scanStatus').textContent=raw.length<12
+        ? raw.length+'/12 letters entered.'
+        : valid ? '✓ Valid — review and start when ready.' : '⚠ Letters not achievable with these dice.';
+    }
+  }
+
   function setMode(m){
     state.mode=m;
     document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));
@@ -656,7 +693,7 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
     $('manualInput').classList.add('hidden');
     $('enterMyRollIllo').classList.add('hidden');
     const btn=$('startClassic');
-    btn.textContent='Roll Virtual Dice'; btn.disabled=false;
+    btn.textContent='Roll Virtual Dice'; btn.disabled=false; btn._isPhysical=false;
     btn.onclick=m==='challenge'?()=>startChallenge():startClassic;
   }
   function resizeImageForUpload(file, cb){
@@ -693,10 +730,10 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
       }).then(r=>r.json()).then(p=>{
         if(p.letters && p.letters.length===12){
           $('manualLetters').value=p.letters.join('');
-          status.textContent='✓ Recognized '+p.letters.length+' dice — review and adjust if needed.';
+          validateManualLetters();
         } else if(p.letters && p.letters.length>0){
           $('manualLetters').value=p.letters.join('');
-          status.textContent='⚠ Only found '+p.letters.length+' of 12 dice — please complete manually.';
+          validateManualLetters();
         } else {
           status.textContent='Could not read the dice — please enter letters manually.';
         }
@@ -1474,14 +1511,18 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
     $('enterMyRollBtn').onclick=()=>{
       $('manualInput').classList.remove('hidden');
       $('enterMyRollIllo').classList.remove('hidden');
+      $('manualLetters').value='';
+      $('scanStatus').textContent='Enter letters manually or tap 📷 Upload / Take Photo.';
       const btn=$('startClassic');
+      btn._isPhysical=true; btn.disabled=true;
       if(state.mode==='challenge'){
-        btn.onclick=startChallengeManual;
+        btn.textContent='Start Challenge'; btn.onclick=startChallengeManual;
       } else {
         state.mode='manual';
-        btn.onclick=startClassic;
+        btn.textContent='Play With My Dice'; btn.onclick=startClassic;
       }
     };
+    $('manualLetters').addEventListener('input', validateManualLetters);
     $('scanDiceBtn').onclick=()=>$('diceImageInput').click();
     $('diceImageInput').onchange=e=>{ if(e.target.files[0]) scanDice(e.target.files[0]); e.target.value=''; };
     document.addEventListener('keydown', onKeyDown);
