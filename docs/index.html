@@ -45,9 +45,9 @@ body.nes .sub{color:var(--muted);font-size:8px;letter-spacing:1px;}
 body.nes .card{background:var(--nes-panel);border:3px solid var(--nes-border);border-radius:0;box-shadow:4px 4px 0 #000;}
 body.nes button{font-family:'Press Start 2P',monospace;border-radius:0;background:var(--nes-btn);border:2px solid var(--nes-border);font-size:9px;padding:10px 12px;text-transform:uppercase;box-shadow:3px 3px 0 #000;color:var(--ink);}
 body.nes button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #000;}
-body.nes button.good{background:#115533;border-color:var(--good);color:var(--good);}
-body.nes button.primary{background:#112255;border-color:#4477ff;color:#88aaff;}
-body.nes button.danger{background:#441122;border-color:var(--danger);color:var(--danger);}
+body.nes button.good{background:#115533;border-color:var(--good);color:var(--good);box-shadow:3px 3px 0 #002211;}
+body.nes button.primary{background:#112255;border-color:#4477ff;color:#88aaff;box-shadow:3px 3px 0 #001133;}
+body.nes button.danger{background:#441122;border-color:var(--danger);color:var(--danger);box-shadow:3px 3px 0 #220011;}
 body.nes button.active{background:var(--nes-btn-hi);border-color:var(--nes-hi);color:var(--nes-hi);}
 body.nes .die.available{background:var(--nes-tile);color:#111;border:3px solid #887766;box-shadow:3px 3px 0 #000;}
 body.nes .die.selected{border-color:var(--nes-hi);box-shadow:0 0 0 2px var(--nes-hi),3px 3px 0 #000;}
@@ -74,11 +74,12 @@ body.snes{
 body.snes h1{color:var(--snes-hi);text-shadow:2px 2px 8px rgba(255,150,0,.5),0 0 20px rgba(255,150,0,.3);}
 body.snes .sub{color:#cc88ff;}
 body.snes .card{background:linear-gradient(160deg,rgba(80,20,120,.6),rgba(40,10,80,.8));border:1px solid rgba(200,100,255,.3);border-radius:16px;box-shadow:0 8px 32px rgba(150,0,255,.2),inset 0 1px 0 rgba(255,255,255,.1);backdrop-filter:blur(12px);}
-body.snes button{border-radius:8px;font-size:13px;background:linear-gradient(180deg,var(--snes-btn),#1e0840);border:1px solid rgba(200,100,255,.4);box-shadow:0 4px 12px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.1);color:var(--ink);padding:10px 14px;}
-body.snes button.good{background:linear-gradient(180deg,#1a6644,#0d3322);border-color:var(--good);color:var(--good);}
-body.snes button.primary{background:linear-gradient(180deg,#223388,#111844);border-color:#6688ff;color:#aabbff;}
-body.snes button.danger{background:linear-gradient(180deg,#661122,#330a11);border-color:var(--danger);color:var(--danger);}
-body.snes button.active{background:linear-gradient(180deg,var(--snes-btn-hi),#441088);border-color:var(--snes-hi);color:var(--snes-hi);}
+body.snes button{border-radius:8px;font-size:13px;background:linear-gradient(180deg,var(--snes-btn),#1e0840);border:1px solid rgba(200,100,255,.4);border-bottom:3px solid #0d0220;box-shadow:inset 0 2px 0 rgba(255,255,255,.12),0 4px 0 #0d0220,0 6px 14px rgba(0,0,0,.4);color:var(--ink);padding:10px 14px;}
+body.snes button:active{transform:translateY(2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 6px 14px rgba(0,0,0,.4);}
+body.snes button.good{background:linear-gradient(180deg,#1a6644,#0d3322);border-color:var(--good);border-bottom-color:#061911;box-shadow:inset 0 2px 0 rgba(100,255,180,.12),0 4px 0 #061911,0 6px 14px rgba(0,0,0,.4);color:var(--good);}
+body.snes button.primary{background:linear-gradient(180deg,#223388,#111844);border-color:#6688ff;border-bottom-color:#080c22;box-shadow:inset 0 2px 0 rgba(120,160,255,.15),0 4px 0 #080c22,0 6px 14px rgba(0,0,0,.4);color:#aabbff;}
+body.snes button.danger{background:linear-gradient(180deg,#661122,#330a11);border-color:var(--danger);border-bottom-color:#180508;box-shadow:inset 0 2px 0 rgba(255,100,100,.12),0 4px 0 #180508,0 6px 14px rgba(0,0,0,.4);color:var(--danger);}
+body.snes button.active{background:linear-gradient(180deg,var(--snes-btn-hi),#441088);border-color:var(--snes-hi);border-bottom-color:#220844;box-shadow:inset 0 2px 0 rgba(200,100,255,.18),0 4px 0 #220844,0 6px 14px rgba(0,0,0,.4);color:var(--snes-hi);}
 body.snes .die.available{background:linear-gradient(160deg,#fffff5 0%,#f5f0e2 55%,#e8e3d4 100%);color:#1a1a0a;border:2px solid #c8c0a8;border-right:3px solid #a8a090;border-bottom:3px solid #a8a090;box-shadow:inset 0 2px 0 rgba(255,255,255,.75),1px 4px 0 #908878,2px 7px 14px rgba(0,0,0,.35);font-weight:900;}
 body.snes .die.selected{border-color:var(--snes-hi);box-shadow:0 0 0 3px var(--snes-hi),0 6px 16px rgba(0,0,0,.4);}
 body.snes .die.used{background:linear-gradient(180deg,#2a1a3a,#1a0a28);color:#554466;border:2px solid #331a44;box-shadow:none;}
