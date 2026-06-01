@@ -682,7 +682,7 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
       btn.disabled=!valid;
       $('scanStatus').textContent=raw.length<12
         ? raw.length+'/12 letters entered.'
-        : valid ? '✓ Valid — review and start when ready.' : '⚠ Letters not achievable with these dice.';
+        : valid ? '✓ Valid — review and start when ready.' : '⚠ Letters don\'t match valid dice — check the scan result and correct any misread letters.';
     }
   }
 
@@ -701,7 +701,7 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
     reader.onload=e=>{
       const img=new Image();
       img.onload=()=>{
-        const MAX=1024;
+        const MAX=1600;
         let w=img.width,h=img.height;
         if(w>MAX||h>MAX){ const s=Math.min(MAX/w,MAX/h); w=Math.round(w*s); h=Math.round(h*s); }
         const canvas=document.createElement('canvas');
