@@ -704,9 +704,8 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
       minC=Math.min(...allCoords.map(([,c])=>c));
       maxC=Math.max(...allCoords.map(([,c])=>c));
     }
-    // 2-cell buffer in every direction
-    const BUF=2;
-    let r0=minR-BUF, r1=maxR+BUF, c0=minC-BUF, c1=maxC+BUF;
+    // No buffer — just the exact bounding box of placed tiles/cursor
+    let r0=minR, r1=maxR, c0=minC, c1=maxC;
     let rows=r1-r0+1, cols=c1-c0+1;
 
     // Always use a square grid of at least 9×9; grows only when content exceeds 9.
