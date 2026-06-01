@@ -201,9 +201,46 @@ def find_challenge_words(letters, max_w1: int = 400):
                     k3 = "".join(sorted(w3_bag.elements()))
                     for w3 in lookup.get(k3, []):
                         if w3 not in (w1, w2) and is_good_word(w3) and c2 in w3:
-                            return [w1, w2, w3]
+                            if has_valid_placement([w1, w2, w3]):
+                                return [w1, w2, w3]
 
     return None
+
+
+def has_valid_placement(words):
+    """
+    Return True if `words` can be arranged on a crossword grid with no
+    2-letter runs.
+
+    1-2 words: a simple '+' crossing never creates 2-letter runs → always True.
+
+    3 words: one word acts as the spine that the other two cross.  When both
+    crossing words are parallel (e.g. both horizontal), their off-spine tiles
+    land on parallel rows/columns.  If the two crossing positions within the
+    spine are adjacent (distance 1), those rows/columns are adjacent and every
+    column covered by both crossing words produces a 2-letter run.  The
+    arrangement is only safe when the two crossing positions are ≥ 2 apart.
+
+    We try every word as the spine and every pair of crossing positions.
+    """
+    if len(words) <= 2:
+        return True
+
+    for idx in range(3):
+        spine = words[idx]
+        other_a, other_b = [words[i] for i in range(3) if i != idx]
+        for p1 in range(len(spine)):
+            if spine[p1] not in other_a:
+                continue
+            for p2 in range(len(spine)):
+                if p2 == p1:
+                    continue
+                if spine[p2] not in other_b:
+                    continue
+                if abs(p1 - p2) >= 2:
+                    return True
+    return False
+
 
 # ── Claude clue generation ────────────────────────────────────────────────────
 
