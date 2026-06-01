@@ -174,7 +174,7 @@ body.nes .die.available.found-tray{border-color:var(--good);box-shadow:0 0 0 2px
 body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 2px 0 rgba(255,255,180,.8),0 6px 0 #3a6a10,2px 8px 16px rgba(0,0,0,.5),0 0 8px rgba(46,230,166,.5);}
 </style>
 </head>
-<body class="nes">
+<body class="snes">
 <div class="wrap">
   <div class="top">
     <div><h1>Dice~Words</h1><div class="sub">Retro dice crossword puzzle</div></div>
@@ -235,7 +235,10 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
         </div>
         <div class="sub" style="margin:6px 0 2px">Drag to board · double-tap to return</div>
         <div id="tray"></div>
-        <div class="sub" style="margin:6px 0 2px"><span id="placedCount">0</span>/12 placed</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 0 2px">
+          <span class="sub"><span id="placedCount">0</span>/12 placed</span>
+          <button id="shuffleBtn" style="padding:4px 8px;font-size:10px">↺ Shuffle</button>
+        </div>
         <div id="statusBar" class="hidden"></div>
         <hr/>
         <div class="row" style="margin:8px 0">
@@ -276,8 +279,8 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
   const GRID_COLS = 12, GRID_ROWS = 12;
   const $ = id => document.getElementById(id);
   const state = {
-    theme:'nes', mode:'classic', puzzle:null,
-    letters:[], placed:{},
+    theme:'snes', mode:'classic', puzzle:null,
+    letters:[], trayOrder:[], placed:{},
     selected:null, selectedCell:null, hintN:0, hintCount:0,
     _lastDieTap:{idx:null,t:0},
     _lastCellTap:{key:null,t:0},
@@ -415,7 +418,8 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     const ch=state.challenge;
     const foundDice=new Set(ch.active ? ch.foundDieIndices : []);
     const tray=$('tray'); tray.innerHTML='';
-    state.letters.forEach((l,i)=>{
+    state.trayOrder.forEach(i=>{
+      const l=state.letters[i];
       const used=Object.values(state.placed).some(p=>p.dieIdx===i);
       const foundInTray=!used&&foundDice.has(i);
       const div=document.createElement('div');
@@ -638,8 +642,22 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     delete state.placed[key];
     renderTray(); renderBoard();
   }
+  function shuffleTray(){
+    sfx('select');
+    const placed=new Set(Object.values(state.placed).map(p=>p.dieIdx));
+    const unplaced=state.trayOrder.filter(i=>!placed.has(i));
+    for(let i=unplaced.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [unplaced[i],unplaced[j]]=[unplaced[j],unplaced[i]];
+    }
+    let ui=0;
+    state.trayOrder=state.trayOrder.map(i=>placed.has(i)?i:unplaced[ui++]);
+    renderTray();
+  }
+
   function startGame(letters, puzzleNum){
     state.letters=letters; state.placed={};
+    state.trayOrder=Array.from({length:12},(_,i)=>i);
     state.selected=null; state.selectedCell=null;
     state.hintN=0; state.hintCount=0;
     $('puzzleNum').textContent='#'+puzzleNum;
@@ -957,7 +975,11 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     $('clearBtn').onclick=clearBoard;
     $('validateBtn').onclick=validate;
     $('hintBtn').onclick=getHint;
-    document.body.className='nes';
+    $('shuffleBtn').onclick=shuffleTray;
+    document.body.className='snes';
+    state.theme='snes';
+    $('nesBtn').classList.remove('active');
+    $('snesBtn').classList.add('active');
     setMode('classic');
     musicOn=false; soundOn=true;
     $('musicBtn').textContent='♪ OFF';
