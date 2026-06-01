@@ -572,7 +572,7 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     state.mode=m;
     document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));
     $('manualInput').classList.toggle('hidden',m!=='manual');
-    $('enterMyRollBtn').classList.toggle('hidden',m==='challenge');
+    $('enterMyRollBtn').classList.toggle('hidden',m!=='classic');
     const btn=$('startClassic');
     if(m==='challenge'){ btn.textContent='Play Daily Challenge'; btn.onclick=startChallenge; }
     else if(m==='manual'){ btn.textContent='Play With My Dice'; btn.onclick=startClassic; }
