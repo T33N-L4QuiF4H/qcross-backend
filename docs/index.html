@@ -1448,34 +1448,18 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
   }
 
   function getGrabbableTiles(){
-    // Returns a Set of board cell keys whose tiles are in isolated (floating)
-    // components — i.e. not connected to any completed/locked word tile.
-    // These can be "picked up" by the typing cursor when the tray is exhausted.
-    const keys=Object.keys(state.placed);
-    if(!keys.length) return new Set();
-    // Find anchor tiles (part of a locked/completed word)
+    // Any placed tile that is NOT part of a locked/completed word is grabbable
+    // by the typing cursor — single tiles, groups, anything not yet anchored.
+    // Requires at least one completed word to exist (otherwise nothing is grabbed).
     const anchored=new Set();
     if(state.challenge.active){
       state.challenge.lockedWordKeys.forEach(ks=>{ if(ks) ks.forEach(k=>anchored.add(k)); });
     } else {
       collectRuns(state.placed).filter(r=>r.word.length>=3).forEach(r=>r.keys.forEach(k=>anchored.add(k)));
     }
-    if(!anchored.size) return new Set(); // nothing anchored → don't treat any tile as floating
-    // BFS to find components; mark those with no anchor tile as grabbable
-    const keySet=new Set(keys), visited=new Set(), grabbable=new Set();
-    for(const start of keys){
-      if(visited.has(start)) continue;
-      const comp=[], queue=[start]; visited.add(start);
-      while(queue.length){
-        const k=queue.shift(); comp.push(k);
-        const [r,c]=k.split(',').map(Number);
-        [[r-1,c],[r+1,c],[r,c-1],[r,c+1]].forEach(([nr,nc])=>{
-          const nk=nr+','+nc;
-          if(keySet.has(nk)&&!visited.has(nk)){ visited.add(nk); queue.push(nk); }
-        });
-      }
-      if(!comp.some(k=>anchored.has(k))) comp.forEach(k=>grabbable.add(k));
-    }
+    if(!anchored.size) return new Set();
+    const grabbable=new Set();
+    Object.keys(state.placed).forEach(k=>{ if(!anchored.has(k)) grabbable.add(k); });
     return grabbable;
   }
 
