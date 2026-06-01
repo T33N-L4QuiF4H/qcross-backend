@@ -43,7 +43,8 @@ FALLBACK_WORDS = {
 # ── Word list ─────────────────────────────────────────────────────────────────
 WORDSET = None
 WORD_BY_SORTED = None   # ''.join(sorted(word)) -> [word, ...]
-COMMON_WORDSET = None   # intersection of system dict + enable1.txt — used for challenge mode
+COMMON_WORDSET = None   # frequency-filtered word set for challenge mode
+WORD_FREQ_RANK = {}     # word.upper() -> int rank (lower = more common)
 
 def load_wordset():
     global WORDSET
@@ -65,7 +66,7 @@ def load_wordset():
     return WORDSET
 
 def load_common_wordset():
-    global COMMON_WORDSET
+    global COMMON_WORDSET, WORD_FREQ_RANK
     if COMMON_WORDSET is not None:
         return COMMON_WORDSET
     words = set()
@@ -73,10 +74,11 @@ def load_common_wordset():
         if path and os.path.exists(path):
             try:
                 with open(path, encoding="utf-8") as f:
-                    for line in f:
+                    for rank, line in enumerate(f):
                         w = line.strip().upper()
                         if 4 <= len(w) <= 9 and w.isalpha():
                             words.add(w)
+                            WORD_FREQ_RANK[w] = rank
                 break
             except Exception:
                 pass
@@ -128,7 +130,8 @@ def find_challenge_words(letters, max_w1: int = 400):
         w for wlist in lookup.values() for w in wlist
         if is_good_word(w) and fits_in(Counter(w), bag)
     ]
-    random.shuffle(candidates)
+    # Sort by frequency rank (most common first) with small random jitter for variety
+    candidates.sort(key=lambda w: WORD_FREQ_RANK.get(w.upper(), 99999) + random.randint(0, 200))
 
     # ── 1 word (all 12 letters) ──────────────────────────────────────────────
     for w in lookup.get(skey(letters), []):
