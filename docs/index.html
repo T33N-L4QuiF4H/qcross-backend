@@ -652,7 +652,7 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
     $('enterMyRollIllo').classList.add('hidden');
     const btn=$('startClassic');
     btn.textContent='Roll Virtual Dice'; btn.disabled=false;
-    btn.onclick=m==='challenge'?startChallenge:startClassic;
+    btn.onclick=m==='challenge'?()=>startChallenge():startClassic;
   }
   function showMenu(){
     const ws=document.getElementById('winScreen'); if(ws) ws.remove();
@@ -1238,6 +1238,7 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
   }
 
   async function startChallenge(letters=null){
+    if(!Array.isArray(letters)) letters=null;
     sfx('menu');
     const btn=$('startClassic');
     btn.textContent='Loading...'; btn.disabled=true;
