@@ -168,8 +168,16 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
 .challenge-extra-hint{font-size:11px;color:var(--muted);margin:2px 0;font-style:italic;}
 .challenge-revealed{font-weight:bold;color:var(--good);margin-left:6px;}
 .challenge-found{font-weight:bold;color:var(--good);margin-left:6px;}
-body.nes .cell.locked.filled{background:var(--nes-tile);border:3px solid var(--good);box-shadow:2px 2px 0 #000,0 0 6px var(--good);}
-body.snes .cell.locked.filled{background:linear-gradient(180deg,#ffe8a0 0%,#d4a030 40%,#c08020 100%);border:3px solid var(--good);border-bottom:4px solid #3a6a10;box-shadow:inset 0 2px 0 rgba(255,255,180,.8),2px 4px 0 #3a6a10,0 0 10px rgba(46,230,166,.5);}
+body.nes .cell.filled:is(.locked-t,.locked-b,.locked-l,.locked-r){box-shadow:0 0 6px var(--good),2px 2px 0 #000;}
+body.nes .cell.filled.locked-t{border-top-color:var(--good);}
+body.nes .cell.filled.locked-b{border-bottom-color:var(--good);}
+body.nes .cell.filled.locked-l{border-left-color:var(--good);}
+body.nes .cell.filled.locked-r{border-right-color:var(--good);}
+body.snes .cell.filled:is(.locked-t,.locked-b,.locked-l,.locked-r){box-shadow:inset 0 2px 0 rgba(255,255,180,.8),2px 4px 0 #5a3000,0 0 12px rgba(46,230,166,.6);}
+body.snes .cell.filled.locked-t{border-top-color:var(--good);}
+body.snes .cell.filled.locked-b{border-bottom-color:var(--good);}
+body.snes .cell.filled.locked-l{border-left-color:var(--good);}
+body.snes .cell.filled.locked-r{border-right-color:var(--good);}
 body.nes .die.available.found-tray{border-color:var(--good);box-shadow:0 0 0 2px var(--good),3px 3px 0 #000;}
 body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 2px 0 rgba(255,255,180,.8),0 6px 0 #3a6a10,2px 8px 16px rgba(0,0,0,.5),0 0 8px rgba(46,230,166,.5);}
 </style>
@@ -372,6 +380,55 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     }
   };
   function sfx(n){ if(!soundOn) return; try{ const s=SFX[state.theme]; if(s&&s[n]) s[n](); }catch(e){} }
+
+  function launchFireworks(){
+    const canvas=$('fireworksCanvas');
+    canvas.width=window.innerWidth; canvas.height=window.innerHeight;
+    const ctx=canvas.getContext('2d');
+    const nes=state.theme==='nes';
+    const COLORS=nes
+      ?['#00ff44','#00ccff','#ffff00','#ff4488','#ff8800','#ffffff']
+      :['#ffe040','#46e6a6','#cc88ff','#ff88aa','#88aaff','#ffffcc'];
+    let particles=[];
+    function burst(x,y){
+      const color=COLORS[Math.floor(Math.random()*COLORS.length)];
+      const count=nes?48:60;
+      for(let i=0;i<count;i++){
+        const angle=(Math.PI*2/count)*i+(Math.random()-.5)*.25;
+        const speed=1.8+Math.random()*5;
+        particles.push({x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,
+          life:1,decay:.011+Math.random()*.009,r:nes?3:2+Math.random()*2.5,color});
+      }
+    }
+    let startTime=null, lastBurst=-9999;
+    const DURATION=4200;
+    function frame(ts){
+      if(!startTime) startTime=ts;
+      const elapsed=ts-startTime;
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      if(ts-lastBurst>650 && elapsed<DURATION-600){
+        const x=canvas.width*(0.15+Math.random()*0.7);
+        const y=canvas.height*(0.15+Math.random()*0.5);
+        burst(x,y); lastBurst=ts;
+      }
+      particles=particles.filter(p=>p.life>0);
+      for(const p of particles){
+        p.x+=p.vx; p.y+=p.vy; p.vy+=0.07; p.vx*=0.99; p.life-=p.decay;
+        ctx.globalAlpha=Math.max(0,p.life);
+        ctx.fillStyle=p.color;
+        if(nes){ ctx.fillRect(p.x-p.r/2,p.y-p.r/2,p.r,p.r); }
+        else{ ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill(); }
+      }
+      ctx.globalAlpha=1;
+      if(elapsed<DURATION||particles.length>0){ requestAnimationFrame(frame); }
+      else{ canvas.style.opacity='0'; }
+    }
+    canvas.style.opacity='1';
+    burst(canvas.width*.5, canvas.height*.35);
+    lastBurst=0;
+    requestAnimationFrame(frame);
+  }
+
   function toggleMusic(){
     unlockAudio();
     musicOn=!musicOn;
@@ -440,7 +497,15 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
       for(let c=0;c<GRID_COLS;c++){
         const key=r+','+c;
         const cell=document.createElement('div');
-        cell.className='cell'+(state.placed[key]?' filled':'')+(state.selectedCell===key?' selected-cell':'')+(lockedKeySet.has(key)?' locked':'');
+        let cls='cell'+(state.placed[key]?' filled':'')+(state.selectedCell===key?' selected-cell':'');
+        if(lockedKeySet.has(key)){
+          cls+=' locked';
+          if(!lockedKeySet.has((r-1)+','+c)) cls+=' locked-t';
+          if(!lockedKeySet.has((r+1)+','+c)) cls+=' locked-b';
+          if(!lockedKeySet.has(r+','+(c-1))) cls+=' locked-l';
+          if(!lockedKeySet.has(r+','+(c+1))) cls+=' locked-r';
+        }
+        cell.className=cls;
         cell.dataset.key=key;
         if(state.placed[key]){
           const span=document.createElement('span'); span.className='letter';
@@ -609,7 +674,7 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     }
     const newLock=checkChallengeWordLocks();
     renderTray(); renderBoard();
-    if(newLock) renderChallengePanel();
+    if(newLock){ renderChallengePanel(); if(state.challenge.wordsFound.every(f=>f)) launchFireworks(); }
   }
 
   function selectDie(i){
@@ -634,7 +699,7 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     state.selected=null;
     const newLock=checkChallengeWordLocks();
     renderTray(); renderBoard();
-    if(newLock) renderChallengePanel();
+    if(newLock){ renderChallengePanel(); if(state.challenge.wordsFound.every(f=>f)) launchFireworks(); }
     $('statusBar').classList.add('hidden');
   }
   function removePlaced(key){
@@ -802,8 +867,10 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
       $('statusBar').textContent='Not in word list: '+bad.join(', ')+'. Keep trying!';
     } else if(state.challenge.active){
       $('statusBar').textContent='Solved! Words: '+good.join(', ')+' — Final score: '+state.challenge.score+' pts!';
+      launchFireworks();
     } else {
       $('statusBar').textContent='All words valid: '+good.join(', ')+'!';
+      launchFireworks();
     }
   }
   function checkChallengeWordLocks(){
@@ -987,5 +1054,6 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
   });
 })();
 </script>
+<canvas id="fireworksCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9998;opacity:0;transition:opacity .6s;"></canvas>
 </body>
 </html>
