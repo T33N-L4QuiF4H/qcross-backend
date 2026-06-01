@@ -43,6 +43,7 @@ FALLBACK_WORDS = {
 # ── Word list ─────────────────────────────────────────────────────────────────
 WORDSET = None
 WORD_BY_SORTED = None   # ''.join(sorted(word)) -> [word, ...]
+COMMON_WORDSET = None   # intersection of system dict + enable1.txt — used for challenge mode
 
 def load_wordset():
     global WORDSET
@@ -63,6 +64,25 @@ def load_wordset():
     WORDSET = words
     return WORDSET
 
+def load_common_wordset():
+    global COMMON_WORDSET
+    if COMMON_WORDSET is not None:
+        return COMMON_WORDSET
+    words = set()
+    for path in [os.environ.get("QCROSS_COMMON_WORDLIST", ""), "common_words.txt"]:
+        if path and os.path.exists(path):
+            try:
+                with open(path, encoding="utf-8") as f:
+                    for line in f:
+                        w = line.strip().upper()
+                        if 4 <= len(w) <= 9 and w.isalpha():
+                            words.add(w)
+                break
+            except Exception:
+                pass
+    COMMON_WORDSET = words if words else None
+    return COMMON_WORDSET
+
 def build_lookup():
     global WORD_BY_SORTED
     if WORD_BY_SORTED is not None:
@@ -80,7 +100,10 @@ def skey(letters):
     return "".join(sorted(c.upper() for c in letters))
 
 def is_good_word(w):
-    """Prefer 4-9-letter words for challenge mode (less obscure range)."""
+    """Only use common, recognisable words for challenge mode."""
+    common = load_common_wordset()
+    if common:
+        return w.upper() in common
     return 4 <= len(w) <= 9
 
 def fits_in(small: Counter, big: Counter) -> bool:
@@ -185,8 +208,11 @@ def generate_clue(word: str, word_num: int, total: int) -> str:
             max_tokens=80,
             messages=[{"role": "user", "content":
                 f'Write a single Will Shortz-style NYT crossword clue for the word "{word}". '
-                f'Be clever and indirect — no obvious synonyms, use wordplay or misdirection. '
-                f'Do NOT mention the word length or spell out the word. Output only the clue.'
+                f'Rules: be clever and indirect; use wordplay or misdirection; '
+                f'do NOT use fill-in-the-blank style (no "_____" blanks); '
+                f'the clue must make complete sense as a standalone phrase without needing the answer to complete it; '
+                f'do not mention word length or spell out the word. '
+                f'Output only the clue, nothing else.'
             }],
         )
         return r.content[0].text.strip().strip('"')
@@ -336,6 +362,7 @@ class ChallengeHintRequest(BaseModel):
 
 @app.on_event("startup")
 def startup():
+    load_common_wordset()
     build_lookup()
 
 @app.get("/health")
