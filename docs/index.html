@@ -862,7 +862,7 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     }
     const newLock=checkChallengeWordLocks();
     renderTray(); renderBoard();
-    if(newLock){ renderChallengePanel(); if(state.challenge.wordsFound.every(f=>f)) launchFireworks(); }
+    if(newLock){ renderChallengePanel(); if(state.challenge.wordsFound.every(f=>f)&&!collectRuns(state.placed).some(r=>r.word.length===2)) launchFireworks(); }
   }
 
   function selectDie(i){
@@ -887,7 +887,7 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     state.selected=null;
     const newLock=checkChallengeWordLocks();
     renderTray(); renderBoard();
-    if(newLock){ renderChallengePanel(); if(state.challenge.wordsFound.every(f=>f)) launchFireworks(); }
+    if(newLock){ renderChallengePanel(); if(state.challenge.wordsFound.every(f=>f)&&!collectRuns(state.placed).some(r=>r.word.length===2)) launchFireworks(); }
     $('statusBar').classList.add('hidden');
   }
   function removePlaced(key){
@@ -1055,6 +1055,11 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
       $('statusBar').classList.remove('hidden'); return;
     }
     const runs=collectRuns(placed);
+    const twoLetterRuns=runs.filter(r=>r.word.length===2);
+    if(twoLetterRuns.length){
+      $('statusBar').textContent='2-letter sequences aren\'t valid: '+twoLetterRuns.map(r=>r.word.toUpperCase()).join(', ')+'.';
+      $('statusBar').classList.remove('hidden'); return;
+    }
     const wordRuns=runs.filter(run=>run.word.length>=3);
     const covered=new Set(wordRuns.flatMap(run=>run.keys));
     const uncovered=Object.keys(placed).filter(k=>!covered.has(k));
