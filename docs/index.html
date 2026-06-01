@@ -122,7 +122,7 @@ button{appearance:none;cursor:pointer;touch-action:manipulation;font:inherit;}
 
 #board-wrap{
   padding:6px;
-  width:min(100%,640px);
+  width:min(100%,640px,calc(100vh - 170px));
   aspect-ratio:1/1;
   margin:0 auto;
 }
@@ -209,7 +209,7 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     <div><strong>Start a game</strong><div class="sub" style="margin:4px 0 12px">Choose a mode, then start playing.</div></div>
     <div class="row">
       <button data-mode="classic" class="active">Classic Dice Words</button>
-      <button data-mode="manual">Manual Entry</button>
+      <button id="loadDaily" class="primary">Challenge Mode</button>
     </div>
     <div id="manualInput" class="hidden" style="margin-top:10px">
       <input id="manualLetters" placeholder="Enter 12 letters e.g. AEIOUYBCDEFG"/>
@@ -217,7 +217,7 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     </div>
     <div class="row" style="margin-top:12px">
       <button id="startClassic" class="good">Roll Virtual Dice</button>
-      <button id="loadDaily" class="primary">Challenge Mode</button>
+      <button data-mode="manual">Enter My Roll</button>
     </div>
     <div class="footer" id="menuDiag">Ready.</div>
   </div>
@@ -596,15 +596,6 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     if(!state.placed[fromKey]) return;
     sfx('move');
     if(!state.placed[toKey]){
-      const test={...state.placed};
-      test[toKey]=test[fromKey];
-      delete test[fromKey];
-      if(Object.keys(test).length>1 && !isConnected(test)){
-        sfx('error');
-        $('statusBar').textContent='That move would disconnect tiles — all tiles must stay connected.';
-        $('statusBar').classList.remove('hidden');
-        return;
-      }
       state.placed[toKey]=state.placed[fromKey];
       delete state.placed[fromKey];
     } else {
@@ -634,12 +625,6 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     return [[r-1,c],[r+1,c],[r,c-1],[r,c+1]].some(([nr,nc])=>state.placed[nr+','+nc]);
   }
   function placeDie(idx, key){
-    if(Object.keys(state.placed).length>0 && !isAdjacentToPlaced(key)){
-      sfx('error');
-      $('statusBar').textContent='Tiles must connect — place next to an existing tile.';
-      $('statusBar').classList.remove('hidden');
-      return;
-    }
     sfx('place');
     state.placed[key]={letter:state.letters[idx], dieIdx:idx};
     state.selected=null;
@@ -649,14 +634,6 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     $('statusBar').classList.add('hidden');
   }
   function removePlaced(key){
-    const test={...state.placed};
-    delete test[key];
-    if(Object.keys(test).length>0 && !isConnected(test)){
-      sfx('error');
-      $('statusBar').textContent='Can\'t remove that tile — it would disconnect other tiles.';
-      $('statusBar').classList.remove('hidden');
-      return;
-    }
     sfx('remove');
     delete state.placed[key];
     renderTray(); renderBoard();
@@ -864,7 +841,7 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
         hints.map(h=>'<div class="challenge-extra-hint">&#128161; '+h+'</div>').join('')+
         (!revealed&&!found?
           '<div class="row" style="margin-top:6px;gap:4px">'+
-            '<button class="primary ask-will-btn" data-i="'+i+'">Ask Will (&#8722;50)</button>'+
+            '<button class="primary ask-will-btn" data-i="'+i+'">Hint (&#8722;50)</button>'+
             '<button class="danger reveal-word-btn" data-i="'+i+'">Reveal (&#8722;150)</button>'+
           '</div>':'');
       el.appendChild(div);

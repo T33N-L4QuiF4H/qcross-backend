@@ -101,8 +101,16 @@ def skey(letters):
     """Canonical sorted-letter key for a collection of letters."""
     return "".join(sorted(c.upper() for c in letters))
 
+_OBSCURE = {
+    'VETCH','BRAWN','SMEW','TACE','CETE','SPEAN','DROIT','MOUE','TORC','THEWS',
+    'BROSE','SPALL','SPALE','SKEAN','DURRA','AGIO','PROA','SWARD','SWALE','CROFT',
+    'MILTY','MINGY','PROLEG','TELIA','TELIC','YENTA','GONZO','SPADO','VOMER','THANE',
+}
+
 def is_good_word(w):
     """Only use common, recognisable words for challenge mode."""
+    if w.upper() in _OBSCURE:
+        return False
     common = load_common_wordset()
     if common:
         return w.upper() in common
@@ -210,12 +218,16 @@ def generate_clue(word: str, word_num: int, total: int) -> str:
             model="claude-haiku-4-5-20251001",
             max_tokens=80,
             messages=[{"role": "user", "content":
-                f'Write a single Will Shortz-style NYT crossword clue for the word "{word}". '
-                f'Rules: be clever and indirect; use wordplay or misdirection; '
-                f'do NOT use fill-in-the-blank style (no "_____" blanks); '
-                f'the clue must make complete sense as a standalone phrase without needing the answer to complete it; '
-                f'do not mention word length or spell out the word. '
-                f'Output only the clue, nothing else.'
+                f'Write a single NYT crossword clue for "{word}" in Will Shortz\'s style.\n\n'
+                f'Rules:\n'
+                f'- Use the most COMMON American English meaning — never obscure or British meanings\n'
+                f'- Be playful and witty: puns, double meanings, unexpected angles are great\n'
+                f'- Keep it SHORT and punchy (under 8 words ideally)\n'
+                f'- Great clue formats: rhetorical questions, "X\'s Y", unexpected comparisons, pop culture\n'
+                f'- Examples of excellent clues: "Sweet source" (HONEY), "Ring leader?" (BOXER), '
+                f'"Something to bank on?" (RIVER), "Charged particles" (IONS)\n'
+                f'- Do NOT use fill-in-the-blank, do NOT spell out the word, do NOT mention letter count\n'
+                f'- Output only the clue text, nothing else'
             }],
         )
         return r.content[0].text.strip().strip('"')
