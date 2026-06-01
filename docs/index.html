@@ -388,7 +388,7 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
   const state = {
     theme:'snes', mode:null, puzzle:null,
     letters:[], trayOrder:[], placed:{},
-    selected:null, selectedCell:null, typingCursor:null, hintN:0, hintCount:0,
+    selected:null, selectedCell:null, typingCursor:null, lastTypingDir:'h', hintN:0, hintCount:0,
     boardDim:9, boardOffset:{r:0,c:0},
     _lastDieTap:{idx:null,t:0},
     _lastCellTap:{key:null,t:0},
@@ -893,7 +893,7 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
       if(state.typingCursor && state.typingCursor.r===r && state.typingCursor.c===c){
         state.typingCursor.dir=state.typingCursor.dir==='h'?'v':'h';
       } else {
-        state.typingCursor={r,c,dir:'h'};
+        state.typingCursor={r,c,dir:state.lastTypingDir==='h'?'v':'h'};
       }
       renderBoard();
     }
@@ -1418,7 +1418,11 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
     sfx('place');
     state.placed[r+','+c]={letter,dieIdx};
     state.selected=null;
-    state.typingCursor={r:r+(dir==='v'?1:0),c:c+(dir==='h'?1:0),dir};
+    state.lastTypingDir=dir;
+    // Advance cursor, skipping any already-placed tiles (crossings)
+    let nr=r+(dir==='v'?1:0), nc=c+(dir==='h'?1:0);
+    while(state.placed[nr+','+nc]){ nr+=(dir==='v'?1:0); nc+=(dir==='h'?1:0); }
+    state.typingCursor={r:nr,c:nc,dir};
     if(state.challenge.active){
       const newLock=checkChallengeWordLocks();
       if(newLock){
