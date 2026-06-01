@@ -553,6 +553,15 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
   function moveOrSwap(fromKey, toKey){
     sfx('move');
     if(!state.placed[toKey]){
+      const test={...state.placed};
+      test[toKey]=test[fromKey];
+      delete test[fromKey];
+      if(Object.keys(test).length>1 && !isConnected(test)){
+        sfx('error');
+        $('statusBar').textContent='That move would disconnect tiles — all tiles must stay connected.';
+        $('statusBar').classList.remove('hidden');
+        return;
+      }
       state.placed[toKey]=state.placed[fromKey];
       delete state.placed[fromKey];
     } else {
@@ -593,6 +602,14 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
     $('statusBar').classList.add('hidden');
   }
   function removePlaced(key){
+    const test={...state.placed};
+    delete test[key];
+    if(Object.keys(test).length>0 && !isConnected(test)){
+      sfx('error');
+      $('statusBar').textContent='Can\'t remove that tile — it would disconnect other tiles.';
+      $('statusBar').classList.remove('hidden');
+      return;
+    }
     sfx('remove');
     delete state.placed[key];
     renderTray(); renderBoard();
