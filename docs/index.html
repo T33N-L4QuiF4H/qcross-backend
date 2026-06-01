@@ -250,9 +250,21 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
       <g transform="translate(268,108) rotate(-10)"><rect width="22" height="22" rx="4" fill="#f5f0e0" stroke="#888" stroke-width="1.5"/><text x="11" y="16" text-anchor="middle" font-size="13" font-weight="bold" fill="#222">R</text></g>
     </svg>
     <div><strong>Start a game</strong><div class="sub" style="margin:4px 0 12px">Choose a mode, then start playing.</div></div>
-    <div class="row">
+    <div class="row" style="align-items:center">
       <button data-mode="challenge" class="active">Challenge Mode</button>
       <button data-mode="classic">Classic Mode</button>
+      <svg id="modeRowIllo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 82" width="88" height="60" class="hidden" style="flex-shrink:0;vertical-align:middle">
+        <ellipse cx="38" cy="72" rx="25" ry="4" fill="#0a0a08" opacity=".18"/>
+        <circle cx="38" cy="40" r="28" fill="#1e1a10"/>
+        <circle cx="38" cy="40" r="26" fill="#f5edd8"/>
+        <circle cx="38" cy="40" r="22" fill="none" stroke="#1e1a10" stroke-width="1.2"/>
+        <text x="38" y="36" text-anchor="middle" font-family="Georgia,serif" font-size="9.5" font-style="italic" font-weight="bold" fill="#1a1408">Dice~</text>
+        <text x="38" y="48" text-anchor="middle" font-family="Georgia,serif" font-size="9.5" font-style="italic" font-weight="bold" fill="#1a1408">Words</text>
+        <path d="M27,55 Q38,63 49,55" fill="none" stroke="#1a1408" stroke-width="1" opacity=".45"/>
+        <g transform="translate(74,1) rotate(-12,11,12)"><polygon points="0,5 5,0 23,0 18,5" fill="#e8dfc0"/><polygon points="18,5 23,0 23,20 18,25" fill="#b0a888"/><rect x="0" y="5" width="18" height="20" rx="4" fill="#f5edd8" stroke="#1e1a10" stroke-width="1.1"/><text x="9" y="21" text-anchor="middle" font-size="13" font-weight="bold" font-family="system-ui,Arial,sans-serif" fill="#1a1408">W</text></g>
+        <g transform="translate(90,28) rotate(10,11,12)"><polygon points="0,5 5,0 23,0 18,5" fill="#e8dfc0"/><polygon points="18,5 23,0 23,20 18,25" fill="#b0a888"/><rect x="0" y="5" width="18" height="20" rx="4" fill="#f5edd8" stroke="#1e1a10" stroke-width="1.1"/><text x="9" y="21" text-anchor="middle" font-size="13" font-weight="bold" font-family="system-ui,Arial,sans-serif" fill="#1a1408">D</text></g>
+        <g transform="translate(72,54) rotate(-8,11,12)"><polygon points="0,5 5,0 23,0 18,5" fill="#e8dfc0"/><polygon points="18,5 23,0 23,20 18,25" fill="#b0a888"/><rect x="0" y="5" width="18" height="20" rx="4" fill="#f5edd8" stroke="#1e1a10" stroke-width="1.1"/><text x="9" y="21" text-anchor="middle" font-size="13" font-weight="bold" font-family="system-ui,Arial,sans-serif" fill="#1a1408">S</text></g>
+      </svg>
     </div>
     <div id="manualInput" class="hidden" style="margin-top:10px">
       <input id="manualLetters" placeholder="Enter 12 letters e.g. AEIOUYBCDEFG"/>
@@ -610,10 +622,10 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     $('manualInput').classList.toggle('hidden',m!=='manual');
     $('enterMyRollBtn').classList.toggle('hidden',m!=='classic');
     $('enterMyRollIllo').classList.toggle('hidden',m!=='classic');
+    $('modeRowIllo').classList.toggle('hidden',m!=='manual');
     const btn=$('startClassic');
-    if(m==='challenge'){ btn.textContent='Play Daily Challenge'; btn.onclick=startChallenge; }
-    else if(m==='manual'){ btn.textContent='Play With My Dice'; btn.onclick=startClassic; }
-    else { btn.textContent='Roll Virtual Dice'; btn.onclick=startClassic; }
+    btn.textContent='Roll Virtual Dice';
+    btn.onclick = m==='challenge' ? startChallenge : startClassic;
   }
   function showMenu(){
     const ws=document.getElementById('winScreen'); if(ws) ws.remove();
@@ -1152,7 +1164,7 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
       $('menuDiag').textContent='Error: '+m;
       alert('Could not load challenge: '+m);
     }finally{
-      btn.textContent='Play Daily Challenge'; btn.disabled=false;
+      btn.textContent='Roll Virtual Dice'; btn.disabled=false;
     }
   }
 
