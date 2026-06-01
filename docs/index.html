@@ -483,6 +483,9 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     const key=e.currentTarget.dataset.key;
     const placed = state.placed[key];
 
+    // Clear stale selectedCell if that cell no longer has a tile
+    if(state.selectedCell && !state.placed[state.selectedCell]) state.selectedCell=null;
+
     // Challenge: moving-word mode — every tap either places or cancels
     if(state.challenge.active && state.challenge.movingWord){
       e.preventDefault();
@@ -611,6 +614,7 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
   }
 
   function moveOrSwap(fromKey, toKey){
+    if(!state.placed[fromKey]) return;
     sfx('move');
     if(!state.placed[toKey]){
       const test={...state.placed};
