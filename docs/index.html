@@ -270,6 +270,7 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
         <div class="row" style="margin:8px 0">
           <button id="validateBtn" class="good">Validate</button>
           <button id="hintBtn">Hint</button>
+          <button id="newRollBtn">New Roll</button>
         </div>
         <div id="classicPanel">
           <div id="hintBox"></div>
@@ -762,6 +763,7 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     $('statusBar').classList.add('hidden');
     const ch=state.challenge.active;
     $('hintBtn').classList.toggle('hidden',ch);
+    $('newRollBtn').classList.toggle('hidden',ch||state.mode!=='classic');
     $('classicPanel').classList.toggle('hidden',ch);
     $('challengePanel').classList.toggle('hidden',!ch);
     if(ch) renderChallengePanel();
@@ -786,6 +788,10 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
       $('menuDiag').textContent='Error: '+m;
       alert('Could not load puzzle: '+m);
     }
+  }
+  function newRoll(){
+    if(Object.keys(state.placed).length>0 && !confirm('Roll new dice? Your current progress will be lost.')) return;
+    startClassic();
   }
   function startClassic(){
     state.challenge.active=false;
@@ -1072,6 +1078,7 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     $('clearBtn').onclick=clearBoard;
     $('validateBtn').onclick=validate;
     $('hintBtn').onclick=getHint;
+    $('newRollBtn').onclick=newRoll;
     $('shuffleBtn').onclick=shuffleTray;
     document.body.className='snes';
     state.theme='snes';
