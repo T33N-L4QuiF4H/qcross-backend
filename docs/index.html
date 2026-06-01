@@ -64,6 +64,7 @@ body.nes .score-item .lbl{color:var(--muted);}
 body.nes strong{color:var(--nes-hi);letter-spacing:1px;}
 body.nes #tray{background:#080818;border:2px solid #1a2255;}
 body.nes #board-wrap{background:#040410;border:3px solid #1a2255;}
+body.nes #tray.drop-target{background:#0a2a0a;border:2px solid var(--good);}
 /* ── SNES ────────────────────────────────── */
 body.snes{
   background:var(--snes-bg);
@@ -91,6 +92,7 @@ body.snes #hintBox{color:#cc99ff;line-height:1.6;}
 body.snes .score-item .val{color:var(--snes-hi);text-shadow:0 0 8px rgba(255,150,0,.5);}
 body.snes strong{color:#ddaaff;}
 body.snes #tray{background:rgba(0,0,0,.3);border:1px solid rgba(200,100,255,.2);border-radius:12px;}
+body.snes #tray.drop-target{background:rgba(46,230,166,.1);border-color:var(--good);box-shadow:0 0 12px rgba(46,230,166,.3);}
 body.snes #board-wrap{background:linear-gradient(180deg,#0a0020,#150030);border:3px solid rgba(150,50,220,.5);border-radius:8px;box-shadow:inset 0 0 30px rgba(100,0,200,.2);}
 
 /* ── SHARED LAYOUT ───────────────────────── */
@@ -425,6 +427,7 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
   }
   function clearDropHighlight(){
     if(drag && drag.lastTarget){ drag.lastTarget.classList.remove('drop-target'); drag.lastTarget=null; }
+    if(drag && drag.trayTarget){ drag.trayTarget.classList.remove('drop-target'); drag.trayTarget=null; }
   }
 
   function onDiePointerDown(e){
@@ -458,6 +461,11 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
       placeDie(state.selected, key);
       return;
     }
+    if(state.selected!==null && placed){
+      $('statusBar').textContent='That cell is occupied — tap an empty cell to place "'+state.letters[state.selected]+'"';
+      $('statusBar').classList.remove('hidden');
+      return;
+    }
     if(state.selectedCell){
       if(key===state.selectedCell){ clearCellSelection(); return; }
       moveOrSwap(state.selectedCell, key);
@@ -483,6 +491,17 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
       drag.moved=true;
     }
     moveGhost(drag.ghost, e.clientX, e.clientY);
+    if(drag.fromCellKey){
+      const trayEl=$('tray'), r=trayEl.getBoundingClientRect();
+      const over=e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom;
+      if(over){
+        if(drag.lastTarget){drag.lastTarget.classList.remove('drop-target');drag.lastTarget=null;}
+        if(!drag.trayTarget){trayEl.classList.add('drop-target');drag.trayTarget=trayEl;}
+        return;
+      } else if(drag.trayTarget){
+        drag.trayTarget.classList.remove('drop-target');drag.trayTarget=null;
+      }
+    }
     const t = targetCellAt(e.clientX, e.clientY);
     if(t!==drag.lastTarget){
       clearDropHighlight();
@@ -501,6 +520,7 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
     if(!drag) return;
     const d = drag;
     const target = drag.lastTarget;
+    const trayTarget = drag.trayTarget;
     clearDropHighlight();
     if(drag.ghost){ drag.ghost.remove(); }
     document.querySelectorAll('.die.dragging').forEach(x=>x.classList.remove('dragging'));
@@ -519,6 +539,7 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
       return;
     }
 
+    if(trayTarget && d.fromCellKey){ removePlaced(d.fromCellKey); return; }
     if(!target) return;
     const key=target.dataset.key;
     if(d.fromTrayIdx!=null){
@@ -626,7 +647,52 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
       $('hintBox').textContent=j.hint;
     }catch(e){ $('hintBox').textContent='Hint #'+state.hintCount+': try placing longer words first.'; }
   }
-  function validate(){
+  let wordSet=null;
+  async function loadWordSet(){
+    if(wordSet) return wordSet;
+    const r=await fetch('./enable1.txt');
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const text=await r.text();
+    wordSet=new Set(text.trim().split('\n').map(w=>w.trim().toLowerCase()).filter(w=>w.length>=3&&w.length<=12));
+    return wordSet;
+  }
+  function isConnected(placed){
+    const keys=Object.keys(placed);
+    if(!keys.length) return true;
+    const keySet=new Set(keys), visited=new Set(), queue=[keys[0]];
+    visited.add(keys[0]);
+    while(queue.length){
+      const k=queue.shift(), [r,c]=k.split(',').map(Number);
+      for(const [nr,nc] of [[r-1,c],[r+1,c],[r,c-1],[r,c+1]]){
+        const nk=nr+','+nc;
+        if(keySet.has(nk)&&!visited.has(nk)){ visited.add(nk); queue.push(nk); }
+      }
+    }
+    return visited.size===keys.length;
+  }
+  function collectRuns(placed){
+    const g={};
+    Object.entries(placed).forEach(([k,v])=>{ g[k]=v.letter; });
+    const runs=[];
+    for(let r=0;r<GRID_ROWS;r++){
+      let w='',ks=[];
+      for(let c=0;c<GRID_COLS;c++){
+        const l=g[r+','+c];
+        if(l){w+=l;ks.push(r+','+c);}else{if(w){runs.push({word:w,keys:[...ks]});w='';ks=[];}}
+      }
+      if(w) runs.push({word:w,keys:[...ks]});
+    }
+    for(let c=0;c<GRID_COLS;c++){
+      let w='',ks=[];
+      for(let r=0;r<GRID_ROWS;r++){
+        const l=g[r+','+c];
+        if(l){w+=l;ks.push(r+','+c);}else{if(w){runs.push({word:w,keys:[...ks]});w='';ks=[];}}
+      }
+      if(w) runs.push({word:w,keys:[...ks]});
+    }
+    return runs;
+  }
+  async function validate(){
     sfx('validate');
     const placed=state.placed;
     const total=Object.keys(placed).length;
@@ -634,28 +700,34 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
       $('statusBar').textContent='Place all 12 letters before validating. ('+total+'/12 placed)';
       $('statusBar').classList.remove('hidden'); return;
     }
-    const gridMap={}; Object.entries(placed).forEach(([k,v])=>{ gridMap[k]=v.letter; });
-    const words=[];
-    for(let r=0;r<GRID_ROWS;r++){
-      let w=''; for(let c=0;c<GRID_COLS;c++){
-        const l=gridMap[r+','+c];
-        if(l){ w+=l; } else { if(w.length>=3) words.push(w); w=''; }
-      }
-      if(w.length>=3) words.push(w);
+    if(!isConnected(placed)){
+      $('statusBar').textContent='Tiles are not all connected — every tile must touch at least one other tile.';
+      $('statusBar').classList.remove('hidden'); return;
     }
-    for(let c=0;c<GRID_COLS;c++){
-      let w=''; for(let r=0;r<GRID_ROWS;r++){
-        const l=gridMap[r+','+c];
-        if(l){ w+=l; } else { if(w.length>=3) words.push(w); w=''; }
-      }
-      if(w.length>=3) words.push(w);
+    const runs=collectRuns(placed);
+    const wordRuns=runs.filter(run=>run.word.length>=3);
+    const covered=new Set(wordRuns.flatMap(run=>run.keys));
+    const uncovered=Object.keys(placed).filter(k=>!covered.has(k));
+    if(uncovered.length){
+      const letters=[...new Set(uncovered.map(k=>placed[k].letter))].join(', ');
+      $('statusBar').textContent='These tiles aren\'t part of any 3+ letter word: '+letters+'.';
+      $('statusBar').classList.remove('hidden'); return;
     }
-    if(words.length===0){
-      $('statusBar').textContent='No valid runs of 3+ letters. Letters must form connected words.';
+    const words=wordRuns.map(run=>run.word);
+    $('statusBar').textContent='Checking dictionary…'; $('statusBar').classList.remove('hidden');
+    let ws;
+    try{ ws=await loadWordSet(); }
+    catch(e){
+      $('statusBar').textContent='Words found: '+words.join(', ')+' — dictionary unavailable on local file. Push to GitHub Pages to check spelling.';
+      return;
+    }
+    const bad=words.filter(w=>!ws.has(w.toLowerCase()));
+    const good=words.filter(w=>ws.has(w.toLowerCase()));
+    if(bad.length){
+      $('statusBar').textContent='Not in word list: '+bad.join(', ')+'. Keep trying!';
     } else {
-      $('statusBar').textContent='Words found: '+words.join(', ')+' — nice work!';
+      $('statusBar').textContent='All words valid: '+good.join(', ')+'!';
     }
-    $('statusBar').classList.remove('hidden');
   }
   function clearBoard(){
     sfx('clear');
