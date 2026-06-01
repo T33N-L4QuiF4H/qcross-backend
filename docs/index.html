@@ -377,7 +377,7 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     _lastDieTap:{idx:null,t:0},
     _lastCellTap:{key:null,t:0},
     challenge:{active:false,words:[],clues:[],wordLengths:[],wordCount:0,
-               score:1000,extraHints:[],wordsRevealed:[],
+               score:1000,extraHints:[],wordsRevealed:[],revealedAll:false,
                lockedWordKeys:[],wordsFound:[],foundDieIndices:[]},
   };
 
@@ -440,7 +440,7 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
   const SFX = {
     nes:{
       select:()=>blip([440,660],'square',0.08),
-      place: ()=>blip([523,659],'square',0.08),
+      place: ()=>{ const r=0.82+Math.random()*0.4; blip([523*r,659*r],'square',0.08); },
       move:  ()=>blip([392],'square',0.08),
       remove:()=>blip([262],'square',0.08),
       menu:  ()=>blip([330],'square',0.06),
@@ -452,7 +452,7 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     },
     snes:{
       select:()=>blip([523,659],'sine',0.05),
-      place: ()=>blip([659,784],'sine',0.05),
+      place: ()=>{ const r=0.82+Math.random()*0.4; blip([659*r,784*r],'sine',0.05); },
       move:  ()=>blip([440],'sine',0.05),
       remove:()=>blip([330],'triangle',0.05),
       menu:  ()=>blip([440],'sine',0.04),
@@ -519,16 +519,23 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     if(!soundOn) return;
     const c=getAudioCtx(); if(!c) return;
     const nes=state.theme==='nes';
-    [0,.09,.17,.27,.37,.47,.57,.68,.8,.93,1.07,1.22,1.38,1.52].forEach((t,i,a)=>{
-      const freq=180+Math.random()*(nes?380:260);
-      const vol=(nes?.1:.065)*(1-i/a.length*.65);
-      const dur=nes?.04:.055;
-      const o=c.createOscillator(),g=c.createGain();
-      o.connect(g);g.connect(c.destination);
-      o.type=nes?'square':'triangle';o.frequency.value=freq;
-      g.gain.setValueAtTime(vol,c.currentTime+t);
-      g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+t+dur);
-      o.start(c.currentTime+t);o.stop(c.currentTime+t+dur+0.01);
+    const bufLen=Math.ceil(c.sampleRate*0.08);
+    const buf=c.createBuffer(1,bufLen,c.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<bufLen;i++) d[i]=Math.random()*2-1;
+    [0,.07,.14,.23,.33,.44,.57,.71,.86,1.02,1.17,1.31,1.44].forEach((t,i,a)=>{
+      const src=c.createBufferSource(); src.buffer=buf;
+      const filt=c.createBiquadFilter();
+      filt.type='bandpass';
+      filt.frequency.value=300+Math.random()*(nes?800:500);
+      filt.Q.value=nes?1.5:2.2;
+      const g=c.createGain();
+      const vol=(nes?.45:.3)*(1-i/a.length*.65);
+      g.gain.setValueAtTime(0,c.currentTime+t);
+      g.gain.linearRampToValueAtTime(vol,c.currentTime+t+.004);
+      g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+t+.048);
+      src.connect(filt);filt.connect(g);g.connect(c.destination);
+      src.start(c.currentTime+t);src.stop(c.currentTime+t+.06);
     });
   }
 
@@ -566,11 +573,21 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     const card=document.createElement('div');
     card.className='win-card card';
     if(ch){
-      const wc=state.challenge.wordCount;
+      const sch=state.challenge;
+      const diff=challengeDifficulty(sch);
+      const hintsUsed=sch.extraHints.reduce((s,h)=>s+h.length,0);
+      const revealsUsed=sch.wordsRevealed.filter(Boolean).length;
+      const hintDeduct=hintsUsed*50;
+      const revealDeduct=sch.revealedAll?400:revealsUsed*150;
+      let breakdown='';
+      if(hintDeduct) breakdown+='<div style="font-size:11px;color:var(--muted)">−'+hintDeduct+' pts ('+hintsUsed+' hint'+(hintsUsed!==1?'s':'')+')</div>';
+      if(revealDeduct) breakdown+='<div style="font-size:11px;color:var(--muted)">−'+revealDeduct+' pts ('+(sch.revealedAll?'reveal all':revealsUsed+' reveal'+(revealsUsed!==1?'s':''))+')</div>';
       card.innerHTML=
         '<div class="win-title">Challenge<br>Complete!</div>'+
-        '<div class="win-score">'+state.challenge.score+' pts</div>'+
-        '<div class="win-words">All '+wc+' word'+(wc!==1?'s':'')+' found!</div>'+
+        '<div style="margin-bottom:6px"><span style="font-size:11px;padding:2px 8px;border-radius:10px;background:'+diff.color+';color:#000;font-weight:bold">'+diff.label+'</span></div>'+
+        '<div class="win-score">'+sch.score+' pts</div>'+
+        (breakdown?'<div style="margin:-6px 0 10px">'+breakdown+'</div>':'')+
+        '<div class="win-words">All '+sch.wordCount+' word'+(sch.wordCount!==1?'s':'')+' found!</div>'+
         '<div class="row" style="justify-content:center;margin-top:14px">'+
           '<button id="winMenuBtn">Menu</button>'+
         '</div>';
@@ -1098,9 +1115,19 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     $('statusBar').classList.remove('hidden');
   }
 
+  function challengeDifficulty(ch){
+    const n=ch.wordCount, avg=ch.wordLengths.reduce((s,l)=>s+l,0)/n;
+    if(n===1||avg>8) return {label:'Hard',color:'var(--danger)'};
+    if(n===3&&avg<=5.5) return {label:'Easy',color:'var(--good)'};
+    return {label:'Medium',color:'var(--snes-hi)'};
+  }
+
   function renderChallengePanel(){
     const ch=state.challenge;
-    $('challengeTitle').textContent='Challenge — '+ch.wordCount+' word'+(ch.wordCount!==1?'s':'');
+    const diff=challengeDifficulty(ch);
+    $('challengeTitle').innerHTML='Challenge &mdash; '+ch.wordCount+' word'+(ch.wordCount!==1?'s':'')+
+      ' <span style="font-size:10px;padding:2px 7px;border-radius:10px;background:'+diff.color+
+      ';color:#000;opacity:.85;margin-left:4px;font-weight:bold">'+diff.label+'</span>';
     $('challengeScore').textContent=ch.score;
     const el=$('challengeClues'); el.innerHTML='';
     ch.words.forEach((word,i)=>{
@@ -1150,7 +1177,7 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
         clues:p.clues,
         wordLengths:p.word_lengths,
         wordCount:p.word_count,
-        score:1000,
+        score:1000,revealedAll:false,
         extraHints:p.words.map(()=>[]),
         wordsRevealed:p.words.map(()=>false),
         lockedWordKeys:p.words.map(()=>null),
@@ -1203,6 +1230,7 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
   function revealAllWords(){
     const ch=state.challenge;
     ch.wordsRevealed=ch.wordsRevealed.map(()=>true);
+    ch.revealedAll=true;
     ch.score=Math.max(0,ch.score-400);
     sfx('remove');
     renderChallengePanel();

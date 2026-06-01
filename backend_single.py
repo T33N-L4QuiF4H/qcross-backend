@@ -138,8 +138,12 @@ def find_challenge_words(letters, max_w1: int = 400):
         w for wlist in lookup.values() for w in wlist
         if is_good_word(w) and fits_in(Counter(w), bag)
     ]
-    # Sort by frequency rank (most common first) with small random jitter for variety
-    candidates.sort(key=lambda w: WORD_FREQ_RANK.get(w.upper(), 99999) + random.randint(0, 200))
+    # Sort by frequency rank (most common first) with small random jitter.
+    # Add a length penalty for words over 6 letters so shorter, more common
+    # words are tried first, reducing very-long-word-dominated puzzles.
+    candidates.sort(key=lambda w: WORD_FREQ_RANK.get(w.upper(), 99999)
+                                  + max(0, len(w) - 6) * 120
+                                  + random.randint(0, 200))
 
     # ── 1 word (all 12 letters) ──────────────────────────────────────────────
     for w in lookup.get(skey(letters), []):
