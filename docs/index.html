@@ -156,17 +156,15 @@ button{appearance:none;cursor:pointer;touch-action:manipulation;font:inherit;}
 }
 .die.dragging{opacity:.3;}
 
+#board-outer{text-align:center;}
 #board-wrap{
   padding:6px;
-  width:min(100%,640px,calc(100vh - 170px));
-  aspect-ratio:1/1;
+  display:inline-block;
   margin:0 auto;
 }
 #board{
   display:grid;
-  grid-template-columns:repeat(12,1fr);
-  grid-template-rows:repeat(12,1fr);
-  gap:3px;width:100%;height:100%;
+  gap:3px;
 }
 .cell{
   aspect-ratio:1/1;width:100%;
@@ -176,7 +174,7 @@ button{appearance:none;cursor:pointer;touch-action:manipulation;font:inherit;}
   touch-action:manipulation;
   position:relative;
 }
-.cell .letter{pointer-events:none;font-size:clamp(10px,2.4vw,16px);}
+.cell .letter{pointer-events:none;}
 .cell .rm{position:absolute;top:1px;right:3px;font-size:10px;color:var(--muted);cursor:pointer;display:none;}
 .cell:hover .rm{display:block;}
 
@@ -220,6 +218,11 @@ body.nes #enterMyRollBtn{background:#d0aa4a;color:#1a1408;border-color:#8a6a20;b
 body.nes #enterMyRollBtn:active{background:#b89a50;}
 body.snes #enterMyRollBtn{background:linear-gradient(180deg,#e8d5a0 0%,#d0aa4a 55%,#b89a50 100%);color:#1a1408;border:2px solid #8a6a20;border-bottom:3px solid #5a3a00;box-shadow:inset 0 2px 0 rgba(255,255,220,.5),0 4px 0 #5a3a00,2px 6px 14px rgba(0,0,0,.35);}
 body.snes #enterMyRollBtn:active{transform:translateY(2px);box-shadow:inset 0 2px 0 rgba(255,255,220,.5),0 2px 0 #5a3a00;}
+.cell.typing-cursor{outline:2px solid currentColor;outline-offset:-3px;}
+body.nes .cell.typing-cursor{outline-color:var(--nes-hi);}
+body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px var(--snes-hi);}
+.cell.cursor-h::after{content:'→';position:absolute;bottom:1px;right:2px;font-size:8px;opacity:.5;pointer-events:none;}
+.cell.cursor-v::after{content:'↓';position:absolute;bottom:1px;right:2px;font-size:8px;opacity:.5;pointer-events:none;}
 </style>
 </head>
 <body class="snes">
@@ -256,7 +259,7 @@ body.snes #enterMyRollBtn:active{transform:translateY(2px);box-shadow:inset 0 2p
     </svg>
     <div><strong>Start a game</strong><div class="sub" style="margin:4px 0 12px">Choose a mode, then start playing.</div></div>
     <div class="row" style="align-items:center">
-      <button data-mode="challenge" class="active">Challenge Mode</button>
+      <button data-mode="challenge">Challenge Mode</button>
       <button data-mode="classic">Classic Mode</button>
       <svg id="modeRowIllo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 82" width="88" height="60" class="hidden" style="flex-shrink:0;vertical-align:middle">
         <ellipse cx="38" cy="72" rx="25" ry="4" fill="#0a0a08" opacity=".18"/>
@@ -275,9 +278,9 @@ body.snes #enterMyRollBtn:active{transform:translateY(2px);box-shadow:inset 0 2p
       <input id="manualLetters" placeholder="Enter 12 letters e.g. AEIOUYBCDEFG"/>
       <div class="sub" style="margin-top:4px">Enter exactly 12 letters matching your physical dice roll.</div>
     </div>
-    <div class="row" style="margin-top:12px;align-items:flex-start">
+    <div id="startRow" class="row hidden" style="margin-top:12px;align-items:flex-start">
       <button id="startClassic" class="good">Roll Virtual Dice</button>
-      <button id="enterMyRollBtn" data-mode="manual" class="hidden">Roll Physical Dice</button>
+      <button id="enterMyRollBtn">Roll Physical Dice</button>
       <svg id="enterMyRollIllo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 82" width="112" height="76" class="hidden" style="flex-shrink:0;position:relative;top:-12px;margin-bottom:-40px">
         <!-- tin shadow -->
         <ellipse cx="38" cy="72" rx="25" ry="4" fill="#0a0a08" opacity=".18"/>
@@ -376,9 +379,9 @@ body.snes #enterMyRollBtn:active{transform:translateY(2px);box-shadow:inset 0 2p
   const GRID_COLS = 12, GRID_ROWS = 12;
   const $ = id => document.getElementById(id);
   const state = {
-    theme:'snes', mode:'challenge', puzzle:null,
+    theme:'snes', mode:null, puzzle:null,
     letters:[], trayOrder:[], placed:{},
-    selected:null, selectedCell:null, hintN:0, hintCount:0,
+    selected:null, selectedCell:null, typingCursor:null, hintN:0, hintCount:0,
     _lastDieTap:{idx:null,t:0},
     _lastCellTap:{key:null,t:0},
     challenge:{active:false,words:[],clues:[],wordLengths:[],wordCount:0,
@@ -582,8 +585,8 @@ body.snes #enterMyRollBtn:active{transform:translateY(2px);box-shadow:inset 0 2p
       const diff=challengeDifficulty(sch);
       const hintsUsed=sch.extraHints.reduce((s,h)=>s+h.length,0);
       const revealsUsed=sch.wordsRevealed.filter(Boolean).length;
-      const hintDeduct=hintsUsed*50;
-      const revealDeduct=sch.revealedAll?400:revealsUsed*150;
+      const hintDeduct=hintsUsed*100;
+      const revealDeduct=sch.revealedAll?400:revealsUsed*250;
       let breakdown='';
       if(hintDeduct) breakdown+='<div style="font-size:11px;color:var(--muted)">−'+hintDeduct+' pts ('+hintsUsed+' hint'+(hintsUsed!==1?'s':'')+')</div>';
       if(revealDeduct) breakdown+='<div style="font-size:11px;color:var(--muted)">−'+revealDeduct+' pts ('+(sch.revealedAll?'reveal all':revealsUsed+' reveal'+(revealsUsed!==1?'s':''))+')</div>';
@@ -641,16 +644,17 @@ body.snes #enterMyRollBtn:active{transform:translateY(2px);box-shadow:inset 0 2p
   function setMode(m){
     state.mode=m;
     document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));
-    $('manualInput').classList.toggle('hidden',m!=='manual');
-    $('enterMyRollBtn').classList.toggle('hidden',m!=='classic');
-    $('enterMyRollIllo').classList.toggle('hidden',m!=='classic');
+    $('startRow').classList.toggle('hidden',!m);
+    $('manualInput').classList.add('hidden');
+    $('enterMyRollIllo').classList.add('hidden');
     const btn=$('startClassic');
     btn.textContent='Roll Virtual Dice';
-    btn.onclick = m==='challenge' ? startChallenge : startClassic;
+    btn.onclick=m==='challenge'?startChallenge:startClassic;
   }
   function showMenu(){
     const ws=document.getElementById('winScreen'); if(ws) ws.remove();
     state.challenge.active=false;
+    state.typingCursor=null;
     $('gameScreen').classList.add('hidden'); $('menuScreen').classList.remove('hidden');
   }
   function showGame(){ $('menuScreen').classList.add('hidden'); $('gameScreen').classList.remove('hidden'); }
@@ -684,12 +688,46 @@ body.snes #enterMyRollBtn:active{transform:translateY(2px);box-shadow:inset 0 2p
     const lockedKeySet=new Set();
     if(state.challenge.active)
       state.challenge.lockedWordKeys.forEach(ks=>{ if(ks) ks.forEach(k=>lockedKeySet.add(k)); });
-    const board=$('board'); board.innerHTML='';
-    for(let r=0;r<GRID_ROWS;r++){
-      for(let c=0;c<GRID_COLS;c++){
+
+    // Compute bounding box of placed tiles + typing cursor
+    const keys=Object.keys(state.placed);
+    const tc=state.typingCursor;
+    let minR=0,maxR=0,minC=0,maxC=0;
+    const allCoords=keys.map(k=>k.split(',').map(Number));
+    if(tc) allCoords.push([tc.r,tc.c]);
+    if(allCoords.length){
+      minR=Math.min(...allCoords.map(([r])=>r));
+      maxR=Math.max(...allCoords.map(([r])=>r));
+      minC=Math.min(...allCoords.map(([,c])=>c));
+      maxC=Math.max(...allCoords.map(([,c])=>c));
+    }
+    // 2-cell buffer in every direction
+    const BUF=2;
+    const r0=minR-BUF, r1=maxR+BUF, c0=minC-BUF, c1=maxC+BUF;
+    const rows=r1-r0+1, cols=c1-c0+1;
+
+    // Cell size computation
+    const wrap=$('board-wrap');
+    const outer=$('board-outer');
+    const rawW=wrap.clientWidth||outer.clientWidth||Math.round(window.innerWidth*0.55);
+    const avW=rawW-12;
+    const avH=window.innerHeight*0.65;
+    const cellSize=Math.max(28,Math.min(56,Math.floor(Math.min(avW/cols,avH/rows))));
+    const fontSize=Math.max(10,Math.round(cellSize*0.48))+'px';
+
+    const board=$('board');
+    board.style.gridTemplateColumns=`repeat(${cols},${cellSize}px)`;
+    board.style.fontSize=fontSize;
+    board.innerHTML='';
+
+    for(let r=r0;r<=r1;r++){
+      for(let c=c0;c<=c1;c++){
         const key=r+','+c;
         const cell=document.createElement('div');
         let cls='cell'+(state.placed[key]?' filled':'')+(state.selectedCell===key?' selected-cell':'');
+        if(tc && tc.r===r && tc.c===c){
+          cls+=' typing-cursor cursor-'+(tc.dir==='h'?'h':'v');
+        }
         if(lockedKeySet.has(key)){
           cls+=' locked';
           if(!lockedKeySet.has((r-1)+','+c)) cls+=' locked-t';
@@ -699,6 +737,8 @@ body.snes #enterMyRollBtn:active{transform:translateY(2px);box-shadow:inset 0 2p
         }
         cell.className=cls;
         cell.dataset.key=key;
+        cell.style.width=cellSize+'px';
+        cell.style.height=cellSize+'px';
         if(state.placed[key]){
           const span=document.createElement('span'); span.className='letter';
           span.textContent=state.placed[key].letter;
@@ -776,6 +816,7 @@ body.snes #enterMyRollBtn:active{transform:translateY(2px);box-shadow:inset 0 2p
       return;
     }
     if(placed){
+      state.typingCursor=null;
       e.preventDefault();
       try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
       drag={fromCellKey:key, ghost:makeGhost(placed.letter), lastTarget:null, moved:false, startX:e.clientX, startY:e.clientY};
@@ -783,6 +824,17 @@ body.snes #enterMyRollBtn:active{transform:translateY(2px);box-shadow:inset 0 2p
       document.addEventListener('pointermove', onPointerMove);
       document.addEventListener('pointerup', onPointerUp, {once:true});
       document.addEventListener('pointercancel', onPointerUp, {once:true});
+      return;
+    }
+    // Empty cell, nothing selected: set/toggle typing cursor
+    {
+      const [r,c]=key.split(',').map(Number);
+      if(state.typingCursor && state.typingCursor.r===r && state.typingCursor.c===c){
+        state.typingCursor.dir=state.typingCursor.dir==='h'?'v':'h';
+      } else {
+        state.typingCursor={r,c,dir:'h'};
+      }
+      renderBoard();
     }
   }
 
@@ -923,10 +975,18 @@ body.snes #enterMyRollBtn:active{transform:translateY(2px);box-shadow:inset 0 2p
   function startGame(letters, puzzleNum){
     state.letters=letters; state.placed={};
     state.trayOrder=Array.from({length:12},(_,i)=>i);
-    state.selected=null; state.selectedCell=null;
+    state.selected=null; state.selectedCell=null; state.typingCursor=null;
     state.hintN=0; state.hintCount=0;
     $('puzzleNum').textContent='#'+puzzleNum;
     $('hintBox').textContent=''; $('hintCount').textContent='0';
+    $('statusBar').classList.add('hidden');
+    const ch=state.challenge.active;
+    $('hintBtn').classList.toggle('hidden',ch);
+    $('newRollBtn').classList.toggle('hidden',ch||state.mode!=='classic');
+    $('classicPanel').classList.toggle('hidden',ch);
+    $('challengePanel').classList.toggle('hidden',!ch);
+    if(ch) renderChallengePanel();
+    showGame();
     renderTray(); renderBoard();
     playRollSound();
     requestAnimationFrame(()=>{
@@ -937,14 +997,6 @@ body.snes #enterMyRollBtn:active{transform:translateY(2px);box-shadow:inset 0 2p
         }, i*60);
       });
     });
-    $('statusBar').classList.add('hidden');
-    const ch=state.challenge.active;
-    $('hintBtn').classList.toggle('hidden',ch);
-    $('newRollBtn').classList.toggle('hidden',ch||state.mode!=='classic');
-    $('classicPanel').classList.toggle('hidden',ch);
-    $('challengePanel').classList.toggle('hidden',!ch);
-    if(ch) renderChallengePanel();
-    showGame();
   }
 
   async function loadDaily(){
@@ -1027,18 +1079,23 @@ body.snes #enterMyRollBtn:active{transform:translateY(2px);box-shadow:inset 0 2p
   function collectRuns(placed){
     const g={};
     Object.entries(placed).forEach(([k,v])=>{ g[k]=v.letter; });
+    const keys=Object.keys(placed);
+    if(!keys.length) return [];
+    const rows=keys.map(k=>+k.split(',')[0]), cols=keys.map(k=>+k.split(',')[1]);
+    const minR=Math.min(...rows), maxR=Math.max(...rows);
+    const minC=Math.min(...cols), maxC=Math.max(...cols);
     const runs=[];
-    for(let r=0;r<GRID_ROWS;r++){
+    for(let r=minR;r<=maxR;r++){
       let w='',ks=[];
-      for(let c=0;c<GRID_COLS;c++){
+      for(let c=minC;c<=maxC;c++){
         const l=g[r+','+c];
         if(l){w+=l;ks.push(r+','+c);}else{if(w){runs.push({word:w,keys:[...ks]});w='';ks=[];}}
       }
       if(w) runs.push({word:w,keys:[...ks]});
     }
-    for(let c=0;c<GRID_COLS;c++){
+    for(let c=minC;c<=maxC;c++){
       let w='',ks=[];
-      for(let r=0;r<GRID_ROWS;r++){
+      for(let r=minR;r<=maxR;r++){
         const l=g[r+','+c];
         if(l){w+=l;ks.push(r+','+c);}else{if(w){runs.push({word:w,keys:[...ks]});w='';ks=[];}}
       }
@@ -1155,8 +1212,8 @@ body.snes #enterMyRollBtn:active{transform:translateY(2px);box-shadow:inset 0 2p
         hints.map(h=>'<div class="challenge-extra-hint">&#128161; '+h+'</div>').join('')+
         (!revealed&&!found?
           '<div class="row" style="margin-top:6px;gap:4px">'+
-            '<button class="primary ask-will-btn" data-i="'+i+'">Hint (&#8722;50)</button>'+
-            '<button class="danger reveal-word-btn" data-i="'+i+'">Reveal (&#8722;150)</button>'+
+            '<button class="primary ask-will-btn" data-i="'+i+'">Hint (&#8722;100)</button>'+
+            '<button class="danger reveal-word-btn" data-i="'+i+'">Reveal (&#8722;250)</button>'+
           '</div>':'');
       el.appendChild(div);
     });
@@ -1169,17 +1226,22 @@ body.snes #enterMyRollBtn:active{transform:translateY(2px);box-shadow:inset 0 2p
     guide.textContent=anyFound?'Double-tap a highlighted word to return its tiles to the tray.':'';
   }
 
-  async function startChallenge(){
+  async function startChallenge(letters=null){
     sfx('menu');
     const btn=$('startClassic');
     btn.textContent='Loading...'; btn.disabled=true;
-    $('menuDiag').textContent='Generating challenge puzzle…';
+    $('menuDiag').textContent='Finding challenge puzzle…';
     try{
       const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),30000);
-      const r=await fetch(API+'/challenge',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}',signal:ctrl.signal});
+      const body=letters?JSON.stringify({letters}):JSON.stringify({});
+      const r=await fetch(API+'/challenge',{method:'POST',headers:{'Content-Type':'application/json'},body,signal:ctrl.signal});
       clearTimeout(t);
       if(!r.ok) throw new Error('HTTP '+r.status);
       const p=await r.json();
+      if(p.found===false){
+        $('menuDiag').textContent='No valid challenge puzzle found — try re-rolling!';
+        return;
+      }
       state.challenge={
         active:true,
         words:p.words,
@@ -1204,6 +1266,12 @@ body.snes #enterMyRollBtn:active{transform:translateY(2px);box-shadow:inset 0 2p
     }
   }
 
+  async function startChallengeManual(){
+    const raw=($('manualLetters').value||'').toUpperCase().replace(/[^A-Z]/g,'');
+    if(raw.length!==12){ alert('Please enter exactly 12 letters.'); return; }
+    await startChallenge(raw.split(''));
+  }
+
   async function askWill(i){
     const ch=state.challenge;
     const btn=document.querySelector('.ask-will-btn[data-i="'+i+'"]');
@@ -1212,18 +1280,18 @@ body.snes #enterMyRollBtn:active{transform:translateY(2px);box-shadow:inset 0 2p
       const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),15000);
       const r=await fetch(API+'/challenge/hint',{
         method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({word:ch.words[i],clue:ch.clues[i],hint_number:(ch.extraHints[i].length+1)}),
+        body:JSON.stringify({word:ch.words[i],clue:ch.clues[i],hint_number:(ch.extraHints[i].length+1),previous_hints:ch.extraHints[i]}),
         signal:ctrl.signal
       });
       clearTimeout(t);
       if(!r.ok) throw new Error('HTTP '+r.status);
       const j=await r.json();
       ch.extraHints[i].push(j.hint);
-      ch.score=Math.max(0,ch.score-50);
+      ch.score=Math.max(0,ch.score-100);
       sfx('hint');
       renderChallengePanel();
     }catch(e){
-      if(btn){btn.disabled=false;btn.textContent='Ask Will (&#8722;50)';}
+      if(btn){btn.disabled=false;btn.textContent='Hint (&#8722;100)';}
     }
   }
 
@@ -1231,7 +1299,7 @@ body.snes #enterMyRollBtn:active{transform:translateY(2px);box-shadow:inset 0 2p
     const ch=state.challenge;
     if(ch.wordsRevealed[i]) return;
     ch.wordsRevealed[i]=true;
-    ch.score=Math.max(0,ch.score-150);
+    ch.score=Math.max(0,ch.score-250);
     sfx('remove');
     renderChallengePanel();
   }
@@ -1247,7 +1315,7 @@ body.snes #enterMyRollBtn:active{transform:translateY(2px);box-shadow:inset 0 2p
 
   function clearBoard(){
     sfx('clear');
-    state.placed={}; state.selected=null; state.selectedCell=null;
+    state.placed={}; state.selected=null; state.selectedCell=null; state.typingCursor=null;
     if(state.challenge.active){
       const ch=state.challenge;
       ch.lockedWordKeys=ch.words.map(()=>null);
@@ -1257,6 +1325,65 @@ body.snes #enterMyRollBtn:active{transform:translateY(2px);box-shadow:inset 0 2p
     }
     renderTray(); renderBoard();
     $('statusBar').classList.add('hidden');
+  }
+
+  function onKeyDown(e){
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+    if(!state.typingCursor) return;
+    const {r,c,dir}=state.typingCursor;
+    if(/^[A-Za-z]$/.test(e.key)){
+      e.preventDefault(); placeTypedLetter(e.key.toUpperCase());
+    } else if(e.key==='Backspace'){
+      e.preventDefault(); removeTypedLetter();
+    } else if(e.key==='ArrowRight'){ e.preventDefault(); state.typingCursor={r,c:c+1,dir:'h'}; renderBoard(); }
+    else if(e.key==='ArrowLeft') { e.preventDefault(); state.typingCursor={r,c:c-1,dir:'h'}; renderBoard(); }
+    else if(e.key==='ArrowDown') { e.preventDefault(); state.typingCursor={r:r+1,c,dir:'v'}; renderBoard(); }
+    else if(e.key==='ArrowUp')   { e.preventDefault(); state.typingCursor={r:r-1,c,dir:'v'}; renderBoard(); }
+    else if(e.key==='Escape')    { state.typingCursor=null; renderBoard(); }
+  }
+
+  function placeTypedLetter(letter){
+    const {r,c,dir}=state.typingCursor;
+    const usedDice=new Set(Object.values(state.placed).map(p=>p.dieIdx));
+    const dieIdx=state.trayOrder.find(i=>!usedDice.has(i)&&state.letters[i]===letter);
+    if(dieIdx===undefined){ sfx('error'); return; }
+    sfx('place');
+    state.placed[r+','+c]={letter,dieIdx};
+    state.selected=null;
+    state.typingCursor={r:r+(dir==='v'?1:0),c:c+(dir==='h'?1:0),dir};
+    if(state.challenge.active){
+      const newLock=checkChallengeWordLocks();
+      if(newLock){
+        renderChallengePanel();
+        if(state.challenge.wordsFound.every(f=>f)&&!collectRuns(state.placed).some(run=>run.word.length===2))
+          launchFireworks();
+      }
+    }
+    $('placedCount').textContent=Object.keys(state.placed).length;
+    $('placedScore').textContent=Object.keys(state.placed).length;
+    renderTray(); renderBoard();
+  }
+
+  function removeTypedLetter(){
+    const {r,c,dir}=state.typingCursor;
+    const key=r+','+c;
+    if(state.placed[key]){
+      sfx('remove'); delete state.placed[key];
+      $('placedCount').textContent=Object.keys(state.placed).length;
+      $('placedScore').textContent=Object.keys(state.placed).length;
+      renderTray(); renderBoard();
+    } else {
+      const pr=r-(dir==='v'?1:0), pc=c-(dir==='h'?1:0);
+      state.typingCursor={r:pr,c:pc,dir};
+      const prevKey=pr+','+pc;
+      if(state.placed[prevKey]){
+        sfx('remove'); delete state.placed[prevKey];
+        $('placedCount').textContent=Object.keys(state.placed).length;
+        $('placedScore').textContent=Object.keys(state.placed).length;
+        renderTray();
+      }
+      renderBoard();
+    }
   }
 
   window.addEventListener('DOMContentLoaded',()=>{
@@ -1272,11 +1399,24 @@ body.snes #enterMyRollBtn:active{transform:translateY(2px);box-shadow:inset 0 2p
     $('hintBtn').onclick=getHint;
     $('newRollBtn').onclick=newRoll;
     $('shuffleBtn').onclick=shuffleTray;
+    $('enterMyRollBtn').onclick=()=>{
+      $('manualInput').classList.remove('hidden');
+      $('enterMyRollIllo').classList.remove('hidden');
+      const btn=$('startClassic');
+      if(state.mode==='challenge'){
+        btn.textContent='Find Challenge';
+        btn.onclick=startChallengeManual;
+      } else {
+        state.mode='manual';
+        btn.textContent='Play With My Dice';
+        btn.onclick=startClassic;
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
     document.body.className='snes';
     state.theme='snes';
     $('nesBtn').classList.remove('active');
     $('snesBtn').classList.add('active');
-    setMode('challenge');
     musicOn=false; soundOn=true;
     $('musicBtn').textContent='♪ OFF';
     $('soundBtn').textContent='SFX ON';

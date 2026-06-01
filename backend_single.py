@@ -304,31 +304,35 @@ def generate_clue(word: str, word_num: int, total: int) -> str:
     except Exception:
         return f"Word {word_num} of {total} ({len(word)} letters)"
 
-def generate_extra_hint(word: str, clue: str, hint_num: int) -> str:
+def generate_extra_hint(word: str, clue: str, hint_number: int, previous_hints: List[str] = []) -> str:
     client = _anthropic_client()
     if not client:
         fallback = [
             f"It starts with '{word[0]}'.",
-            f"It has {len(word)} letters.",
             f"It ends with '{word[-1]}'.",
+            f"It has {len(word)} letters.",
         ]
-        return fallback[min(hint_num - 1, len(fallback) - 1)]
+        return fallback[min(hint_number - 1, len(fallback) - 1)]
     directness = [
-        "a gentle nudge that doesn't give much away",
-        "moderately helpful — narrows it down significantly",
-        "very direct, almost giving the answer away — but stop short of stating it",
-    ][min(hint_num - 1, 2)]
+        "a very gentle nudge — mention the category or domain without describing the word itself",
+        "more specific — describe a concrete feature, usage, or context that narrows it down meaningfully",
+        "quite direct — give a near-definition or strong association that almost gives it away, without stating it",
+    ][min(hint_number - 1, 2)]
+    prev = ""
+    if previous_hints:
+        prev = ("\n\nHints already given (do NOT repeat or rephrase these — yours must reveal something new):\n"
+                + "\n".join(f"- Hint {i+1}: {h}" for i, h in enumerate(previous_hints)))
     try:
         r = client.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=80,
             messages=[{"role": "user", "content":
                 f'The answer to crossword clue "{clue}" is "{word}". '
-                f'Write extra hint #{hint_num} that is {directness}. '
-                f'Do not state the answer directly. Output only the hint text.'
+                f'Write extra hint #{hint_number} that is {directness}.{prev} '
+                f'Do not state the answer. Output only the hint text.'
             }],
         )
-        return r.content[0].text.strip()
+        return r.content[0].text.strip().strip('"')
     except Exception:
         return f"It starts with '{word[0]}'."
 
@@ -442,6 +446,7 @@ class ChallengeHintRequest(BaseModel):
     word: str
     clue: str
     hint_number: int = 1
+    previous_hints: List[str] = []
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 
@@ -486,24 +491,31 @@ def score(req: ScoreRequest):
 @app.post("/challenge")
 def challenge(req: ChallengeRequest):
     # Use provided letters or roll new ones; retry up to 12 times to find a combo
-    letters = [c.upper() for c in req.letters[:12]] if req.letters else None
+    specific_letters = [c.upper() for c in req.letters[:12]] if req.letters else None
+    letters = specific_letters
     words = None
+    last_letters = letters if letters else None
     for _ in range(12):
         l = letters if letters else roll_random()
+        last_letters = l
         words = find_challenge_words(l)
         if words:
             letters = l
             break
+        if specific_letters:
+            # Don't keep retrying with different letters if specific ones were given
+            break
 
     if not words:
-        # Absolute fallback: use legacy greedy solver
-        if not letters:
-            letters = roll_random()
-        words, _ = solve_letters(letters)
+        return {
+            "found": False,
+            "letters": last_letters or (specific_letters if specific_letters else roll_random()),
+        }
 
     clues = [generate_clue(w, i + 1, len(words)) for i, w in enumerate(words)]
 
     return {
+        "found": True,
         "letters": letters,
         "word_count": len(words),
         "words": words,
@@ -513,4 +525,4 @@ def challenge(req: ChallengeRequest):
 
 @app.post("/challenge/hint")
 def challenge_hint(req: ChallengeHintRequest):
-    return {"hint": generate_extra_hint(req.word, req.clue, req.hint_number)}
+    return {"hint": generate_extra_hint(req.word, req.clue, req.hint_number, req.previous_hints)}
