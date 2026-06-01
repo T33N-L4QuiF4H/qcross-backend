@@ -278,8 +278,7 @@ body.snes #enterMyRollBtn:active{transform:translateY(2px);box-shadow:inset 0 2p
     <div class="row" style="margin-top:12px">
       <button id="startClassic" class="good">Roll Virtual Dice</button>
       <button id="enterMyRollBtn" data-mode="manual" class="hidden">Roll Physical Dice</button>
-    </div>
-    <svg id="enterMyRollIllo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 82" width="112" height="76" class="hidden" style="display:block;margin-top:8px">
+      <svg id="enterMyRollIllo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 82" width="112" height="76" class="hidden" style="flex-shrink:0;vertical-align:middle">
         <!-- tin shadow -->
         <ellipse cx="38" cy="72" rx="25" ry="4" fill="#0a0a08" opacity=".18"/>
         <!-- tin outer dark ring -->
@@ -315,6 +314,7 @@ body.snes #enterMyRollBtn:active{transform:translateY(2px);box-shadow:inset 0 2p
           <text x="9" y="21" text-anchor="middle" font-size="13" font-weight="bold" font-family="system-ui,Arial,sans-serif" fill="#1a1408">S</text>
         </g>
       </svg>
+    </div>
     <div class="footer" id="menuDiag">Ready.</div>
   </div>
 
@@ -643,8 +643,7 @@ body.snes #enterMyRollBtn:active{transform:translateY(2px);box-shadow:inset 0 2p
     document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));
     $('manualInput').classList.toggle('hidden',m!=='manual');
     $('enterMyRollBtn').classList.toggle('hidden',m!=='classic');
-    $('enterMyRollIllo').classList.toggle('hidden',m!=='classic');
-    $('modeRowIllo').classList.toggle('hidden',m!=='manual');
+    $('enterMyRollIllo').classList.toggle('hidden',m!=='manual');
     const btn=$('startClassic');
     btn.textContent='Roll Virtual Dice';
     btn.onclick = m==='challenge' ? startChallenge : startClassic;
