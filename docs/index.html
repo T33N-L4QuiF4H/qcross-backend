@@ -251,8 +251,8 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     </svg>
     <div><strong>Start a game</strong><div class="sub" style="margin:4px 0 12px">Choose a mode, then start playing.</div></div>
     <div class="row">
-      <button data-mode="classic" class="active">Classic Dice Words</button>
-      <button id="loadDaily" class="primary">Challenge Mode</button>
+      <button data-mode="challenge" class="active">Challenge Mode</button>
+      <button data-mode="classic">Classic Mode</button>
     </div>
     <div id="manualInput" class="hidden" style="margin-top:10px">
       <input id="manualLetters" placeholder="Enter 12 letters e.g. AEIOUYBCDEFG"/>
@@ -260,7 +260,7 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     </div>
     <div class="row" style="margin-top:12px">
       <button id="startClassic" class="good">Roll Virtual Dice</button>
-      <button data-mode="manual">Enter My Roll</button>
+      <button id="enterMyRollBtn" data-mode="manual">Enter My Roll</button>
     </div>
     <div class="footer" id="menuDiag">Ready.</div>
   </div>
@@ -323,7 +323,7 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
   const GRID_COLS = 12, GRID_ROWS = 12;
   const $ = id => document.getElementById(id);
   const state = {
-    theme:'snes', mode:'classic', puzzle:null,
+    theme:'snes', mode:'challenge', puzzle:null,
     letters:[], trayOrder:[], placed:{},
     selected:null, selectedCell:null, hintN:0, hintCount:0,
     _lastDieTap:{idx:null,t:0},
@@ -572,7 +572,11 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     state.mode=m;
     document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));
     $('manualInput').classList.toggle('hidden',m!=='manual');
-    $('startClassic').textContent=m==='manual'?'Play With My Dice':'Roll Virtual Dice';
+    $('enterMyRollBtn').classList.toggle('hidden',m==='challenge');
+    const btn=$('startClassic');
+    if(m==='challenge'){ btn.textContent='Play Daily Challenge'; btn.onclick=startChallenge; }
+    else if(m==='manual'){ btn.textContent='Play With My Dice'; btn.onclick=startClassic; }
+    else { btn.textContent='Roll Virtual Dice'; btn.onclick=startClassic; }
   }
   function showMenu(){
     const ws=document.getElementById('winScreen'); if(ws) ws.remove();
@@ -1082,7 +1086,7 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
 
   async function startChallenge(){
     sfx('menu');
-    const btn=$('loadDaily');
+    const btn=$('startClassic');
     btn.textContent='Loading...'; btn.disabled=true;
     $('menuDiag').textContent='Generating challenge puzzle…';
     try{
@@ -1111,7 +1115,7 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
       $('menuDiag').textContent='Error: '+m;
       alert('Could not load challenge: '+m);
     }finally{
-      btn.textContent='Challenge Mode'; btn.disabled=false;
+      btn.textContent='Play Daily Challenge'; btn.disabled=false;
     }
   }
 
@@ -1175,8 +1179,6 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     $('musicBtn').onclick=toggleMusic;
     $('soundBtn').onclick=toggleSound;
     document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
-    $('startClassic').onclick=startClassic;
-    $('loadDaily').onclick=startChallenge;
     $('revealAllBtn').onclick=revealAllWords;
     $('menuBtn').onclick=showMenu;
     $('clearBtn').onclick=clearBoard;
@@ -1188,7 +1190,7 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     state.theme='snes';
     $('nesBtn').classList.remove('active');
     $('snesBtn').classList.add('active');
-    setMode('classic');
+    setMode('challenge');
     musicOn=false; soundOn=true;
     $('musicBtn').textContent='♪ OFF';
     $('soundBtn').textContent='SFX ON';
