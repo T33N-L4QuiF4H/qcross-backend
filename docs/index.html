@@ -714,6 +714,7 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
       state.challenge.lockedWordKeys.forEach(ks=>{ if(ks) ks.forEach(k=>lockedKeySet.add(k)); });
 
     ensureBoardFits();
+    const tc=state.typingCursor;
     const dim=state.boardDim, h=Math.floor(dim/2);
     const ro=state.boardOffset.r, co=state.boardOffset.c;
     const r0=ro-h, r1=r0+dim-1, c0=co-h, c1=c0+dim-1;
