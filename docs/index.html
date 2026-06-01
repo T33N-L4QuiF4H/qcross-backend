@@ -648,7 +648,7 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
     $('manualInput').classList.add('hidden');
     $('enterMyRollIllo').classList.add('hidden');
     const btn=$('startClassic');
-    btn.textContent='Roll Virtual Dice';
+    btn.textContent='Roll Virtual Dice'; btn.disabled=false;
     btn.onclick=m==='challenge'?startChallenge:startClassic;
   }
   function showMenu(){
@@ -1259,8 +1259,7 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
       $('menuDiag').textContent='Challenge loaded!';
     }catch(e){
       const m=e.name==='AbortError'?'timeout':e.message;
-      $('menuDiag').textContent='Error: '+m;
-      alert('Could not load challenge: '+m);
+      $('menuDiag').textContent='Error: '+m+' — try again.';
     }finally{
       btn.textContent='Roll Virtual Dice'; btn.disabled=false;
     }
@@ -1404,11 +1403,9 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
       $('enterMyRollIllo').classList.remove('hidden');
       const btn=$('startClassic');
       if(state.mode==='challenge'){
-        btn.textContent='Find Challenge';
         btn.onclick=startChallengeManual;
       } else {
         state.mode='manual';
-        btn.textContent='Play With My Dice';
         btn.onclick=startClassic;
       }
     };
