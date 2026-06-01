@@ -736,6 +736,12 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     let ui=0;
     state.trayOrder=state.trayOrder.map(i=>placed.has(i)?i:unplaced[ui++]);
     renderTray();
+    [...document.querySelectorAll('#tray .die.available')].forEach((die,i)=>{
+      setTimeout(()=>{
+        die.classList.add('rolling');
+        die.addEventListener('animationend',()=>die.classList.remove('rolling'),{once:true});
+      }, i*40);
+    });
   }
 
   function startGame(letters, puzzleNum){
