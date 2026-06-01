@@ -285,18 +285,22 @@ def generate_clue(word: str, word_num: int, total: int) -> str:
         return f"Word {word_num} of {total} ({len(word)} letters)"
     try:
         r = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+            model="claude-sonnet-4-6",
             max_tokens=80,
             messages=[{"role": "user", "content":
-                f'Write a single NYT crossword clue for "{word}" in Will Shortz\'s style.\n\n'
+                f'Write one NYT crossword clue for "{word}" in Will Shortz\'s style.\n\n'
+                f'A GREAT clue is indirect — it never defines the word or restates it:\n'
+                f'  HONEY → "Sweet source" ✓   vs  "Sweet substance made by bees" ✗\n'
+                f'  BOXER → "Ring leader?" ✓    vs  "Dog breed or fighter" ✗\n'
+                f'  RIVER → "Something to bank on?" ✓  vs  "Flowing body of water" ✗\n'
+                f'  JAWS → "Spielberg\'s beach nightmare" ✓  vs  "Great white threat in Jaws" ✗\n'
+                f'  PARTLY → "___ cloudy" ✓  vs  "In part" ✗\n\n'
                 f'Rules:\n'
-                f'- Use the most COMMON American English meaning — never obscure or British meanings\n'
-                f'- Be playful and witty: puns, double meanings, unexpected angles are great\n'
-                f'- Keep it SHORT and punchy (under 8 words ideally)\n'
-                f'- Great clue formats: rhetorical questions, "X\'s Y", unexpected comparisons, pop culture\n'
-                f'- Examples of excellent clues: "Sweet source" (HONEY), "Ring leader?" (BOXER), '
-                f'"Something to bank on?" (RIVER), "Charged particles" (IONS)\n'
-                f'- Do NOT use fill-in-the-blank, do NOT spell out the word, do NOT mention letter count\n'
+                f'- NEVER define the word or use it as a synonym — that is the #1 mistake\n'
+                f'- NEVER reference a work whose title IS the answer (e.g. don\'t clue JAWS with "Jaws")\n'
+                f'- Use wordplay, misdirection, puns, or an unexpected angle\n'
+                f'- Keep it under 7 words\n'
+                f'- Common formats: "X\'s Y", rhetorical question with "?", "___ [word]" fill-in, pop culture reference\n'
                 f'- Output only the clue text, nothing else'
             }],
         )
