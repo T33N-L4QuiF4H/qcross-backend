@@ -1241,39 +1241,41 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
     sfx('menu');
     const btn=$('startClassic');
     btn.textContent='Loading...'; btn.disabled=true;
-    $('menuDiag').textContent='Finding challenge puzzle…';
-    try{
-      const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),30000);
-      const body=letters?JSON.stringify({letters}):JSON.stringify({});
-      const r=await fetch(API+'/challenge',{method:'POST',headers:{'Content-Type':'application/json'},body,signal:ctrl.signal});
-      clearTimeout(t);
-      if(!r.ok) throw new Error('HTTP '+r.status);
-      const p=await r.json();
-      if(p.found===false){
-        $('menuDiag').textContent='No valid challenge puzzle found — try re-rolling!';
-        return;
+    const body=letters?JSON.stringify({letters}):JSON.stringify({});
+    let p=null;
+    for(let attempt=1;attempt<=3;attempt++){
+      $('menuDiag').textContent=attempt===1?'Finding challenge puzzle…':'Server waking up… retrying ('+attempt+'/3)';
+      if(attempt>1) await new Promise(res=>setTimeout(res,3000));
+      try{
+        const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),35000);
+        const r=await fetch(API+'/challenge',{method:'POST',headers:{'Content-Type':'application/json'},body,signal:ctrl.signal});
+        clearTimeout(t);
+        if(r.status===422&&attempt<3) continue;
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        p=await r.json(); break;
+      }catch(e){
+        if(attempt<3&&e.name!=='AbortError') continue;
+        const m=e.name==='AbortError'?'timeout':e.message;
+        $('menuDiag').textContent='Error: '+m+' — try again.';
+        btn.textContent='Roll Virtual Dice'; btn.disabled=false; return;
       }
-      state.challenge={
-        active:true,
-        words:p.words,
-        clues:p.clues,
-        wordLengths:p.word_lengths,
-        wordCount:p.word_count,
-        score:1000,revealedAll:false,
-        extraHints:p.words.map(()=>[]),
-        wordsRevealed:p.words.map(()=>false),
-        lockedWordKeys:p.words.map(()=>null),
-        wordsFound:p.words.map(()=>false),
-        foundDieIndices:new Set(),
-      };
-      startGame(p.letters,'challenge');
-      $('menuDiag').textContent='Challenge loaded!';
-    }catch(e){
-      const m=e.name==='AbortError'?'timeout':e.message;
-      $('menuDiag').textContent='Error: '+m+' — try again.';
-    }finally{
-      btn.textContent='Roll Virtual Dice'; btn.disabled=false;
     }
+    if(!p){ $('menuDiag').textContent='Could not reach server — try again.'; btn.textContent='Roll Virtual Dice'; btn.disabled=false; return; }
+    if(p.found===false){
+      $('menuDiag').textContent='No valid challenge puzzle found — try re-rolling!';
+      btn.textContent='Roll Virtual Dice'; btn.disabled=false; return;
+    }
+    state.challenge={
+      active:true,
+      words:p.words, clues:p.clues, wordLengths:p.word_lengths, wordCount:p.word_count,
+      score:1000, revealedAll:false,
+      extraHints:p.words.map(()=>[]), wordsRevealed:p.words.map(()=>false),
+      lockedWordKeys:p.words.map(()=>null), wordsFound:p.words.map(()=>false),
+      foundDieIndices:new Set(),
+    };
+    startGame(p.letters,'challenge');
+    $('menuDiag').textContent='Challenge loaded!';
+    btn.textContent='Roll Virtual Dice'; btn.disabled=false;
   }
 
   async function startChallengeManual(){
