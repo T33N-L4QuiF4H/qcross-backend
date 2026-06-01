@@ -385,6 +385,7 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
     theme:'snes', mode:null, puzzle:null,
     letters:[], trayOrder:[], placed:{},
     selected:null, selectedCell:null, typingCursor:null, hintN:0, hintCount:0,
+    boardDim:9, boardOffset:{r:0,c:0},
     _lastDieTap:{idx:null,t:0},
     _lastCellTap:{key:null,t:0},
     challenge:{active:false,words:[],clues:[],wordLengths:[],wordCount:0,
@@ -687,47 +688,45 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
     $('placedCount').textContent=Object.keys(state.placed).length;
     $('placedScore').textContent=Object.keys(state.placed).length;
   }
+  function ensureBoardFits(){
+    const allCoords=Object.keys(state.placed).map(k=>k.split(',').map(Number));
+    if(state.typingCursor) allCoords.push([state.typingCursor.r,state.typingCursor.c]);
+    if(!allCoords.length) return;
+    const minR=Math.min(...allCoords.map(([r])=>r));
+    const maxR=Math.max(...allCoords.map(([r])=>r));
+    const minC=Math.min(...allCoords.map(([,c])=>c));
+    const maxC=Math.max(...allCoords.map(([,c])=>c));
+    // Grow dimension to fit content, max 12×12
+    state.boardDim=Math.min(Math.max(state.boardDim,maxR-minR+1,maxC-minC+1,9),12);
+    const dim=state.boardDim,h=Math.floor(dim/2);
+    let {r:ro,c:co}=state.boardOffset;
+    // Only shift origin if content overflows the current viewport (12×12 hard limit reached)
+    if(minR<ro-h)          ro=minR+h;
+    else if(maxR>ro-h+dim-1) ro=maxR-(dim-1-h);
+    if(minC<co-h)          co=minC+h;
+    else if(maxC>co-h+dim-1) co=maxC-(dim-1-h);
+    state.boardOffset={r:ro,c:co};
+  }
+
   function renderBoard(){
     const lockedKeySet=new Set();
     if(state.challenge.active)
       state.challenge.lockedWordKeys.forEach(ks=>{ if(ks) ks.forEach(k=>lockedKeySet.add(k)); });
 
-    // Compute bounding box of placed tiles + typing cursor
-    const keys=Object.keys(state.placed);
-    const tc=state.typingCursor;
-    let minR=0,maxR=0,minC=0,maxC=0;
-    const allCoords=keys.map(k=>k.split(',').map(Number));
-    if(tc) allCoords.push([tc.r,tc.c]);
-    if(allCoords.length){
-      minR=Math.min(...allCoords.map(([r])=>r));
-      maxR=Math.max(...allCoords.map(([r])=>r));
-      minC=Math.min(...allCoords.map(([,c])=>c));
-      maxC=Math.max(...allCoords.map(([,c])=>c));
-    }
-    // No buffer — just the exact bounding box of placed tiles/cursor
-    let r0=minR, r1=maxR, c0=minC, c1=maxC;
-    let rows=r1-r0+1, cols=c1-c0+1;
+    ensureBoardFits();
+    const dim=state.boardDim, h=Math.floor(dim/2);
+    const ro=state.boardOffset.r, co=state.boardOffset.c;
+    const r0=ro-h, r1=r0+dim-1, c0=co-h, c1=c0+dim-1;
 
-    // Always use a square grid of at least 9×9; grows only when content exceeds 9.
-    // Board container is fixed size — cells shrink via 1fr to fit.
-    const MIN_DIM=9;
-    const viewDim=Math.max(rows,cols,MIN_DIM);
-
-    // Expand bounds to viewDim×viewDim, centred on content
-    const extraR=viewDim-rows, extraC=viewDim-cols;
-    r0-=Math.floor(extraR/2); r1=r0+viewDim-1;
-    c0-=Math.floor(extraC/2); c1=c0+viewDim-1;
-
-    // Font size estimate: container is fixed, so we can approximate cell size
     const wrap=$('board-wrap');
     const containerW=wrap.clientWidth||Math.round(window.innerWidth*0.55);
-    const estCell=Math.floor((containerW-12-3*(viewDim-1))/viewDim);
+    const estCell=Math.floor((containerW-12-3*(dim-1))/dim);
     const fontSize=Math.max(10,Math.min(22,Math.round(estCell*0.48)))+'px';
 
-    const noTiles=keys.length===0&&!tc;
+    const noTiles=Object.keys(state.placed).length===0&&!state.typingCursor;
     const board=$('board');
-    board.style.gridTemplateColumns=`repeat(${viewDim},1fr)`;
-    board.style.gridTemplateRows=`repeat(${viewDim},1fr)`;
+    board.style.gridTemplateColumns=`repeat(${dim},1fr)`;
+    board.style.gridTemplateRows=`repeat(${dim},1fr)`;
     board.style.fontSize=fontSize;
     board.innerHTML='';
 
@@ -986,6 +985,7 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
     state.letters=letters; state.placed={};
     state.trayOrder=Array.from({length:12},(_,i)=>i);
     state.selected=null; state.selectedCell=null; state.typingCursor=null;
+    state.boardDim=9; state.boardOffset={r:0,c:0};
     state.hintN=0; state.hintCount=0;
     $('puzzleNum').textContent='#'+puzzleNum;
     $('hintBox').textContent=''; $('hintCount').textContent='0';
