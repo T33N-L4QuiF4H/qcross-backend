@@ -452,6 +452,10 @@ class ChallengeHintRequest(BaseModel):
     hint_number: int = 1
     previous_hints: List[str] = []
 
+class DiceImageRequest(BaseModel):
+    image: str        # base64-encoded image data
+    media_type: str = "image/jpeg"
+
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @app.on_event("startup")
@@ -530,3 +534,42 @@ def challenge(req: ChallengeRequest):
 @app.post("/challenge/hint")
 def challenge_hint(req: ChallengeHintRequest):
     return {"hint": generate_extra_hint(req.word, req.clue, req.hint_number, req.previous_hints)}
+
+@app.post("/recognize-dice")
+def recognize_dice(req: DiceImageRequest):
+    client = _anthropic_client()
+    if not client:
+        return {"error": "AI not available", "letters": []}
+    try:
+        r = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=60,
+            messages=[{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": req.media_type,
+                            "data": req.image,
+                        }
+                    },
+                    {
+                        "type": "text",
+                        "text": (
+                            "These are Q-Less letter dice. Each die is a cube with a letter on each face. "
+                            "Identify the letter showing on the TOP face of every die in the image. "
+                            "There should be 12 dice total. "
+                            "Reply with ONLY the 12 letters as a single uppercase string, no spaces or punctuation. "
+                            "Example reply: ABTCESRNLIMO"
+                        )
+                    }
+                ]
+            }]
+        )
+        raw = r.content[0].text.strip().upper()
+        letters = [c for c in raw if c.isalpha()][:12]
+        return {"letters": letters, "raw": raw}
+    except Exception as e:
+        return {"error": str(e), "letters": []}
