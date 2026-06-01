@@ -166,6 +166,9 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
 .challenge-clue{font-size:12px;margin:4px 0 6px;line-height:1.5;}
 .challenge-extra-hint{font-size:11px;color:var(--muted);margin:2px 0;font-style:italic;}
 .challenge-revealed{font-weight:bold;color:var(--good);margin-left:6px;}
+.challenge-found{font-weight:bold;color:var(--good);margin-left:6px;}
+body.nes .cell.locked{background:#051a05;border:3px solid var(--good);box-shadow:inset 0 0 0 1px var(--good);}
+body.snes .cell.locked{background:rgba(46,230,166,.18);border-color:var(--good);box-shadow:0 0 10px rgba(46,230,166,.35);}
 </style>
 </head>
 <body class="nes">
@@ -274,7 +277,8 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
     _lastDieTap:{idx:null,t:0},
     _lastCellTap:{key:null,t:0},
     challenge:{active:false,words:[],clues:[],wordLengths:[],wordCount:0,
-               score:1000,extraHints:[],wordsRevealed:[]},
+               score:1000,extraHints:[],wordsRevealed:[],
+               lockedWordKeys:[],wordsFound:[],movingWord:null},
   };
 
   let audioCtx=null, musicNode=null, musicTimer=null;
@@ -389,6 +393,7 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
   }
   function showMenu(){
     state.challenge.active=false;
+    state.challenge.movingWord=null;
     $('gameScreen').classList.add('hidden'); $('menuScreen').classList.remove('hidden');
   }
   function showGame(){ $('menuScreen').classList.add('hidden'); $('gameScreen').classList.remove('hidden'); }
@@ -415,12 +420,15 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
     $('placedScore').textContent=Object.keys(state.placed).length;
   }
   function renderBoard(){
+    const lockedKeySet=new Set();
+    if(state.challenge.active)
+      state.challenge.lockedWordKeys.forEach(ks=>{ if(ks) ks.forEach(k=>lockedKeySet.add(k)); });
     const board=$('board'); board.innerHTML='';
     for(let r=0;r<GRID_ROWS;r++){
       for(let c=0;c<GRID_COLS;c++){
         const key=r+','+c;
         const cell=document.createElement('div');
-        cell.className='cell'+(state.placed[key]?' filled':'')+(state.selectedCell===key?' selected-cell':'');
+        cell.className='cell'+(state.placed[key]?' filled':'')+(state.selectedCell===key?' selected-cell':'')+(lockedKeySet.has(key)?' locked':'');
         cell.dataset.key=key;
         if(state.placed[key]){
           const span=document.createElement('span'); span.className='letter';
@@ -468,6 +476,14 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
     const key=e.currentTarget.dataset.key;
     const placed = state.placed[key];
 
+    // Challenge: moving-word mode — every tap either places or cancels
+    if(state.challenge.active && state.challenge.movingWord){
+      e.preventDefault();
+      const isLocked=state.challenge.lockedWordKeys.some(ks=>ks&&ks.includes(key));
+      if(isLocked){ cancelMovingWord(); } else { placeMovingWord(key); }
+      return;
+    }
+
     // Double-tap on a placed die returns it to the tray
     const now=Date.now();
     if(placed && state._lastCellTap.key===key && now-state._lastCellTap.t<350){
@@ -476,6 +492,12 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
       return;
     }
     state._lastCellTap = placed ? {key,t:now} : {key:null,t:0};
+
+    // Challenge: tapping a locked tile picks up the whole word
+    if(state.challenge.active && placed){
+      const lockedIdx=state.challenge.lockedWordKeys.findIndex(ks=>ks&&ks.includes(key));
+      if(lockedIdx>=0){ e.preventDefault(); pickUpLockedWord(lockedIdx); return; }
+    }
 
     if(state.selected!==null && !placed){
       placeDie(state.selected, key);
@@ -589,7 +611,9 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
       state.placed[toKey]=state.placed[fromKey];
       state.placed[fromKey]=tmp;
     }
+    const newLock=checkChallengeWordLocks();
     renderTray(); renderBoard();
+    if(newLock) renderChallengePanel();
   }
 
   function selectDie(i){
@@ -618,10 +642,18 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
     sfx('place');
     state.placed[key]={letter:state.letters[idx], dieIdx:idx};
     state.selected=null;
+    const newLock=checkChallengeWordLocks();
     renderTray(); renderBoard();
+    if(newLock) renderChallengePanel();
     $('statusBar').classList.add('hidden');
   }
   function removePlaced(key){
+    if(state.challenge.active && state.challenge.lockedWordKeys.some(ks=>ks&&ks.includes(key))){
+      sfx('error');
+      $('statusBar').textContent='That tile is locked — tap it to move the whole word.';
+      $('statusBar').classList.remove('hidden');
+      return;
+    }
     const test={...state.placed};
     delete test[key];
     if(Object.keys(test).length>0 && !isConnected(test)){
@@ -784,6 +816,86 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
       $('statusBar').textContent='All words valid: '+good.join(', ')+'!';
     }
   }
+  function checkChallengeWordLocks(){
+    if(!state.challenge.active) return false;
+    const ch=state.challenge;
+    const runs=collectRuns(state.placed);
+    let newLock=false;
+    ch.words.forEach((word,i)=>{
+      if(ch.lockedWordKeys[i]) return;
+      const match=runs.find(r=>r.word.toUpperCase()===word.toUpperCase());
+      if(match){
+        ch.lockedWordKeys[i]=match.keys;
+        ch.wordsFound[i]=true;
+        newLock=true;
+        sfx('validate');
+      }
+    });
+    return newLock;
+  }
+
+  function pickUpLockedWord(wordIdx){
+    const ch=state.challenge;
+    const keys=ch.lockedWordKeys[wordIdx];
+    if(!keys) return;
+    const [r0,c0]=keys[0].split(',').map(Number);
+    const [r1,c1]=keys[1].split(',').map(Number);
+    const direction=r0===r1?'H':'V';
+    const tiles=keys.map(k=>({...state.placed[k]}));
+    // Return all non-locked tiles to tray
+    const allLockedKeys=new Set(ch.lockedWordKeys.flatMap(ks=>ks||[]));
+    Object.keys(state.placed).forEach(k=>{ if(!allLockedKeys.has(k)) delete state.placed[k]; });
+    // Remove this word from board
+    keys.forEach(k=>delete state.placed[k]);
+    ch.lockedWordKeys[wordIdx]=null;
+    ch.wordsFound[wordIdx]=false;
+    ch.movingWord={wordIdx,direction,tiles,word:ch.words[wordIdx],originalKeys:keys};
+    state.selected=null; state.selectedCell=null;
+    sfx('select');
+    renderTray(); renderBoard(); renderChallengePanel();
+    $('statusBar').textContent='Moving "'+ch.words[wordIdx]+'" — tap a cell to place the first letter. Tap any locked tile to cancel.';
+    $('statusBar').classList.remove('hidden');
+  }
+
+  function cancelMovingWord(){
+    const ch=state.challenge;
+    if(!ch.movingWord) return;
+    const {wordIdx,tiles,originalKeys}=ch.movingWord;
+    originalKeys.forEach((k,i)=>{ state.placed[k]={...tiles[i]}; });
+    ch.lockedWordKeys[wordIdx]=originalKeys;
+    ch.wordsFound[wordIdx]=true;
+    ch.movingWord=null;
+    renderTray(); renderBoard(); renderChallengePanel();
+    $('statusBar').classList.add('hidden');
+  }
+
+  function placeMovingWord(targetKey){
+    const ch=state.challenge;
+    const {wordIdx,direction,tiles,word}=ch.movingWord;
+    const [r,c]=targetKey.split(',').map(Number);
+    const newKeys=tiles.map((_,i)=>direction==='H'?r+','+(c+i):(r+i)+','+c);
+    // Bounds check
+    if(newKeys.some(k=>{ const [kr,kc]=k.split(',').map(Number); return kr<0||kr>=GRID_ROWS||kc<0||kc>=GRID_COLS; })){
+      sfx('error');
+      $('statusBar').textContent='"'+word+'" doesn\'t fit there — too close to the edge.';
+      return;
+    }
+    // Overlap with other locked tiles
+    const otherLocked=new Set(ch.lockedWordKeys.flatMap((ks,i)=>i!==wordIdx&&ks?ks:[]));
+    if(newKeys.some(k=>otherLocked.has(k))){
+      sfx('error');
+      $('statusBar').textContent='Can\'t place "'+word+'" there — overlaps with a locked word.';
+      return;
+    }
+    newKeys.forEach((k,i)=>{ state.placed[k]={...tiles[i]}; });
+    ch.lockedWordKeys[wordIdx]=newKeys;
+    ch.wordsFound[wordIdx]=true;
+    ch.movingWord=null;
+    sfx('place');
+    renderTray(); renderBoard(); renderChallengePanel();
+    $('statusBar').classList.add('hidden');
+  }
+
   function renderChallengePanel(){
     const ch=state.challenge;
     $('challengeTitle').textContent='Challenge — '+ch.wordCount+' word'+(ch.wordCount!==1?'s':'');
@@ -791,17 +903,19 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
     const el=$('challengeClues'); el.innerHTML='';
     ch.words.forEach((word,i)=>{
       const revealed=ch.wordsRevealed[i];
+      const found=ch.wordsFound[i];
       const hints=(ch.extraHints[i]||[]);
       const div=document.createElement('div');
       div.className='challenge-word';
       div.innerHTML=
         '<div class="sub" style="margin-bottom:4px">Word '+(i+1)+
           ' &middot; '+ch.wordLengths[i]+' letters'+
-          (revealed?'<span class="challenge-revealed">'+word+'</span>':'')+
+          (found?'<span class="challenge-found">&#10003; Found!</span>':'') +
+          (revealed&&!found?'<span class="challenge-revealed">'+word+'</span>':'')+
         '</div>'+
         '<div class="challenge-clue">'+ch.clues[i]+'</div>'+
         hints.map(h=>'<div class="challenge-extra-hint">&#128161; '+h+'</div>').join('')+
-        (!revealed?
+        (!revealed&&!found?
           '<div class="row" style="margin-top:6px;gap:4px">'+
             '<button class="primary ask-will-btn" data-i="'+i+'">Ask Will (&#8722;50)</button>'+
             '<button class="danger reveal-word-btn" data-i="'+i+'">Reveal (&#8722;150)</button>'+
@@ -833,6 +947,9 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
         score:1000,
         extraHints:p.words.map(()=>[]),
         wordsRevealed:p.words.map(()=>false),
+        lockedWordKeys:p.words.map(()=>null),
+        wordsFound:p.words.map(()=>false),
+        movingWord:null,
       };
       startGame(p.letters,'challenge');
       $('menuDiag').textContent='Challenge loaded!';
@@ -888,6 +1005,13 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
   function clearBoard(){
     sfx('clear');
     state.placed={}; state.selected=null; state.selectedCell=null;
+    if(state.challenge.active){
+      const ch=state.challenge;
+      ch.lockedWordKeys=ch.words.map(()=>null);
+      ch.wordsFound=ch.words.map(()=>false);
+      ch.movingWord=null;
+      renderChallengePanel();
+    }
     renderTray(); renderBoard();
     $('statusBar').classList.add('hidden');
   }
