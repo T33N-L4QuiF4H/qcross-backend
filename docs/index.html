@@ -651,9 +651,36 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
   async function loadWordSet(){
     if(wordSet) return wordSet;
     const r=await fetch('./enable1.txt');
+    if(!r.ok) throw new Error('HTTP '+r.status);
     const text=await r.text();
     wordSet=new Set(text.trim().split('\n').map(w=>w.trim().toLowerCase()).filter(w=>w.length>=3&&w.length<=12));
     return wordSet;
+  }
+  function isConnected(placed){
+    const keys=Object.keys(placed);
+    if(!keys.length) return true;
+    const keySet=new Set(keys), visited=new Set(), queue=[keys[0]];
+    visited.add(keys[0]);
+    while(queue.length){
+      const k=queue.shift(), [r,c]=k.split(',').map(Number);
+      for(const [nr,nc] of [[r-1,c],[r+1,c],[r,c-1],[r,c+1]]){
+        const nk=nr+','+nc;
+        if(keySet.has(nk)&&!visited.has(nk)){ visited.add(nk); queue.push(nk); }
+      }
+    }
+    return visited.size===keys.length;
+  }
+  function collectRuns(placed){
+    const g={};
+    Object.entries(placed).forEach(([k,v])=>{ g[k]=v.letter; });
+    const runs=[];
+    for(let r=0;r<GRID_ROWS;r++){
+      let w=''; for(let c=0;c<GRID_COLS;c++){ const l=g[r+','+c]; if(l){w+=l;}else{if(w)runs.push(w);w='';} } if(w)runs.push(w);
+    }
+    for(let c=0;c<GRID_COLS;c++){
+      let w=''; for(let r=0;r<GRID_ROWS;r++){ const l=g[r+','+c]; if(l){w+=l;}else{if(w)runs.push(w);w='';} } if(w)runs.push(w);
+    }
+    return runs;
   }
   async function validate(){
     sfx('validate');
@@ -663,34 +690,26 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
       $('statusBar').textContent='Place all 12 letters before validating. ('+total+'/12 placed)';
       $('statusBar').classList.remove('hidden'); return;
     }
-    $('statusBar').textContent='Checking…'; $('statusBar').classList.remove('hidden');
-    let ws;
-    try{ ws=await loadWordSet(); }
-    catch(e){ $('statusBar').textContent='Could not load word list: '+e.message; return; }
-    const gridMap={}; Object.entries(placed).forEach(([k,v])=>{ gridMap[k]=v.letter; });
-    const runs=[];
-    for(let r=0;r<GRID_ROWS;r++){
-      let w=''; for(let c=0;c<GRID_COLS;c++){
-        const l=gridMap[r+','+c];
-        if(l){ w+=l; } else { if(w) runs.push(w); w=''; }
-      }
-      if(w) runs.push(w);
+    if(!isConnected(placed)){
+      $('statusBar').textContent='Tiles are not all connected — every tile must touch at least one other tile.';
+      $('statusBar').classList.remove('hidden'); return;
     }
-    for(let c=0;c<GRID_COLS;c++){
-      let w=''; for(let r=0;r<GRID_ROWS;r++){
-        const l=gridMap[r+','+c];
-        if(l){ w+=l; } else { if(w) runs.push(w); w=''; }
-      }
-      if(w) runs.push(w);
-    }
+    const runs=collectRuns(placed);
     const short=runs.filter(w=>w.length<3);
     const words=runs.filter(w=>w.length>=3);
     if(short.length){
-      $('statusBar').textContent='Invalid: "'+short.map(w=>w.toLowerCase()).join('", "').toUpperCase()+'" — every tile must be part of a 3+ letter word.';
-      return;
+      $('statusBar').textContent='Invalid: '+short.map(w=>w.toUpperCase()).join(', ')+' — every tile must be part of a 3+ letter word.';
+      $('statusBar').classList.remove('hidden'); return;
     }
     if(!words.length){
       $('statusBar').textContent='No words found. Tiles must form words of 3+ letters.';
+      $('statusBar').classList.remove('hidden'); return;
+    }
+    $('statusBar').textContent='Checking dictionary…'; $('statusBar').classList.remove('hidden');
+    let ws;
+    try{ ws=await loadWordSet(); }
+    catch(e){
+      $('statusBar').textContent='Words found: '+words.join(', ')+' — dictionary unavailable on local file. Push to GitHub Pages to check spelling.';
       return;
     }
     const bad=words.filter(w=>!ws.has(w.toLowerCase()));
