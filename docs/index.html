@@ -156,15 +156,15 @@ button{appearance:none;cursor:pointer;touch-action:manipulation;font:inherit;}
 }
 .die.dragging{opacity:.3;}
 
-#board-outer{text-align:center;}
 #board-wrap{
   padding:6px;
-  display:inline-block;
+  width:min(100%,640px,calc(100vh - 170px));
+  aspect-ratio:1/1;
   margin:0 auto;
 }
 #board{
   display:grid;
-  gap:3px;
+  gap:3px;width:100%;height:100%;
 }
 .cell{
   aspect-ratio:1/1;width:100%;
@@ -709,24 +709,26 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
     let r0=minR-BUF, r1=maxR+BUF, c0=minC-BUF, c1=maxC+BUF;
     let rows=r1-r0+1, cols=c1-c0+1;
 
-    // Enforce a minimum 9×9 display area, expanding symmetrically around content
+    // Always use a square grid of at least 9×9; grows only when content exceeds 9.
+    // Board container is fixed size — cells shrink via 1fr to fit.
     const MIN_DIM=9;
-    if(rows<MIN_DIM){ const pad=MIN_DIM-rows; r0-=Math.floor(pad/2); r1=r0+MIN_DIM-1; rows=MIN_DIM; }
-    if(cols<MIN_DIM){ const pad=MIN_DIM-cols; c0-=Math.floor(pad/2); c1=c0+MIN_DIM-1; cols=MIN_DIM; }
+    const viewDim=Math.max(rows,cols,MIN_DIM);
 
-    // Cell size: fixed for 9×9, shrinks only when grid exceeds 9×9
-    const refDim=Math.max(rows,cols,MIN_DIM);
+    // Expand bounds to viewDim×viewDim, centred on content
+    const extraR=viewDim-rows, extraC=viewDim-cols;
+    r0-=Math.floor(extraR/2); r1=r0+viewDim-1;
+    c0-=Math.floor(extraC/2); c1=c0+viewDim-1;
+
+    // Font size estimate: container is fixed, so we can approximate cell size
     const wrap=$('board-wrap');
-    const outer=$('board-outer');
-    const rawW=wrap.clientWidth||outer.clientWidth||Math.round(window.innerWidth*0.55);
-    const avW=rawW-12;
-    const avH=window.innerHeight*0.65;
-    const cellSize=Math.max(28,Math.min(56,Math.floor(Math.min(avW/refDim,avH/refDim))));
-    const fontSize=Math.max(10,Math.round(cellSize*0.48))+'px';
+    const containerW=wrap.clientWidth||Math.round(window.innerWidth*0.55);
+    const estCell=Math.floor((containerW-12-3*(viewDim-1))/viewDim);
+    const fontSize=Math.max(10,Math.min(22,Math.round(estCell*0.48)))+'px';
 
     const noTiles=keys.length===0&&!tc;
     const board=$('board');
-    board.style.gridTemplateColumns=`repeat(${cols},${cellSize}px)`;
+    board.style.gridTemplateColumns=`repeat(${viewDim},1fr)`;
+    board.style.gridTemplateRows=`repeat(${viewDim},1fr)`;
     board.style.fontSize=fontSize;
     board.innerHTML='';
 
@@ -748,8 +750,6 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
         }
         cell.className=cls;
         cell.dataset.key=key;
-        cell.style.width=cellSize+'px';
-        cell.style.height=cellSize+'px';
         if(state.placed[key]){
           const span=document.createElement('span'); span.className='letter';
           span.textContent=state.placed[key].letter;
@@ -1242,7 +1242,7 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
     const btn=$('startClassic');
     btn.textContent='Loading...'; btn.disabled=true;
     const body=letters?JSON.stringify({letters}):JSON.stringify({});
-    let p=null;
+    let p=null, lastError=null;
     for(let attempt=1;attempt<=3;attempt++){
       $('menuDiag').textContent=attempt===1?'Finding challenge puzzle…':'Server waking up… retrying ('+attempt+'/3)';
       if(attempt>1) await new Promise(res=>setTimeout(res,3000));
@@ -1250,8 +1250,12 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
         const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),35000);
         const r=await fetch(API+'/challenge',{method:'POST',headers:{'Content-Type':'application/json'},body,signal:ctrl.signal});
         clearTimeout(t);
-        if(r.status===422&&attempt<3) continue;
-        if(!r.ok) throw new Error('HTTP '+r.status);
+        if(!r.ok){
+          let msg='HTTP '+r.status;
+          try{ const e=await r.json(); msg+=' '+JSON.stringify(e.detail||e); }catch(_){}
+          if(r.status===422&&attempt<3){lastError=new Error(msg);continue;}
+          throw new Error(msg);
+        }
         p=await r.json(); break;
       }catch(e){
         if(attempt<3&&e.name!=='AbortError') continue;
