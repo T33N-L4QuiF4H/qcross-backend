@@ -218,6 +218,9 @@ body.nes #enterMyRollBtn{background:#d0aa4a;color:#1a1408;border-color:#8a6a20;b
 body.nes #enterMyRollBtn:active{background:#b89a50;}
 body.snes #enterMyRollBtn{background:linear-gradient(180deg,#e8d5a0 0%,#d0aa4a 55%,#b89a50 100%);color:#1a1408;border:2px solid #8a6a20;border-bottom:3px solid #5a3a00;box-shadow:inset 0 2px 0 rgba(255,255,220,.5),0 4px 0 #5a3a00,2px 6px 14px rgba(0,0,0,.35);}
 body.snes #enterMyRollBtn:active{transform:translateY(2px);box-shadow:inset 0 2px 0 rgba(255,255,220,.5),0 2px 0 #5a3a00;}
+.cell.start-cell::after{content:'+';font-size:16px;opacity:.35;pointer-events:none;}
+body.nes .cell.start-cell{border:2px dashed var(--nes-hi);opacity:.7;}
+body.snes .cell.start-cell{border:2px dashed rgba(200,100,255,.7);opacity:.7;}
 .cell.typing-cursor{outline:2px solid currentColor;outline-offset:-3px;}
 body.nes .cell.typing-cursor{outline-color:var(--nes-hi);}
 body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px var(--snes-hi);}
@@ -703,18 +706,25 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
     }
     // 2-cell buffer in every direction
     const BUF=2;
-    const r0=minR-BUF, r1=maxR+BUF, c0=minC-BUF, c1=maxC+BUF;
-    const rows=r1-r0+1, cols=c1-c0+1;
+    let r0=minR-BUF, r1=maxR+BUF, c0=minC-BUF, c1=maxC+BUF;
+    let rows=r1-r0+1, cols=c1-c0+1;
 
-    // Cell size computation
+    // Enforce a minimum 9×9 display area, expanding symmetrically around content
+    const MIN_DIM=9;
+    if(rows<MIN_DIM){ const pad=MIN_DIM-rows; r0-=Math.floor(pad/2); r1=r0+MIN_DIM-1; rows=MIN_DIM; }
+    if(cols<MIN_DIM){ const pad=MIN_DIM-cols; c0-=Math.floor(pad/2); c1=c0+MIN_DIM-1; cols=MIN_DIM; }
+
+    // Cell size: fixed for 9×9, shrinks only when grid exceeds 9×9
+    const refDim=Math.max(rows,cols,MIN_DIM);
     const wrap=$('board-wrap');
     const outer=$('board-outer');
     const rawW=wrap.clientWidth||outer.clientWidth||Math.round(window.innerWidth*0.55);
     const avW=rawW-12;
     const avH=window.innerHeight*0.65;
-    const cellSize=Math.max(28,Math.min(56,Math.floor(Math.min(avW/cols,avH/rows))));
+    const cellSize=Math.max(28,Math.min(56,Math.floor(Math.min(avW/refDim,avH/refDim))));
     const fontSize=Math.max(10,Math.round(cellSize*0.48))+'px';
 
+    const noTiles=keys.length===0&&!tc;
     const board=$('board');
     board.style.gridTemplateColumns=`repeat(${cols},${cellSize}px)`;
     board.style.fontSize=fontSize;
@@ -725,6 +735,7 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
         const key=r+','+c;
         const cell=document.createElement('div');
         let cls='cell'+(state.placed[key]?' filled':'')+(state.selectedCell===key?' selected-cell':'');
+        if(noTiles && r===0 && c===0) cls+=' start-cell';
         if(tc && tc.r===r && tc.c===c){
           cls+=' typing-cursor cursor-'+(tc.dir==='h'?'h':'v');
         }
