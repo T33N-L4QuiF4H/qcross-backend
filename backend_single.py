@@ -209,19 +209,29 @@ def find_challenge_words(letters, max_w1: int = 400):
 
 def has_valid_placement(words):
     """
-    Return True if `words` can be arranged on a crossword grid with no
+    Return True if the words can be arranged on a crossword grid with no
     2-letter runs.
 
-    1-2 words: a simple '+' crossing never creates 2-letter runs → always True.
+    1-2 words: a simple '+' crossing never produces 2-letter runs → always True.
 
-    3 words: one word acts as the spine that the other two cross.  When both
-    crossing words are parallel (e.g. both horizontal), their off-spine tiles
-    land on parallel rows/columns.  If the two crossing positions within the
-    spine are adjacent (distance 1), those rows/columns are adjacent and every
-    column covered by both crossing words produces a 2-letter run.  The
-    arrangement is only safe when the two crossing positions are ≥ 2 apart.
+    3 words: one word acts as the spine crossed by the other two (which are
+    parallel to each other).  2-letter runs appear when both parallel words
+    have tiles on the same off-spine row/column — i.e. both extend in the
+    same direction away from the spine.
 
-    We try every word as the spine and every pair of crossing positions.
+    For each candidate spine and pair of crossing positions (p1 in spine for
+    word A, p2 in spine for word B), and for each position q_a in word A and
+    q_b in word B where the crossing characters match:
+
+      • word A extends ABOVE the spine if q_a > 0
+      • word A extends BELOW the spine if q_a < len(A) - 1
+      (and symmetrically for word B)
+
+    An arrangement is valid (no 2-letter runs) when:
+      NOT (both extend above)  AND  NOT (both extend below)
+
+    Non-adjacent spine positions (|p1-p2| >= 2) are always safe because the
+    parallel words occupy different columns/rows with no shared neighbours.
     """
     if len(words) <= 2:
         return True
@@ -229,16 +239,35 @@ def has_valid_placement(words):
     for idx in range(3):
         spine = words[idx]
         other_a, other_b = [words[i] for i in range(3) if i != idx]
+
         for p1 in range(len(spine)):
-            if spine[p1] not in other_a:
+            c1 = spine[p1]
+            qa_list = [q for q, ch in enumerate(other_a) if ch == c1]
+            if not qa_list:
                 continue
+
             for p2 in range(len(spine)):
                 if p2 == p1:
                     continue
-                if spine[p2] not in other_b:
+                c2 = spine[p2]
+                qb_list = [q for q, ch in enumerate(other_b) if ch == c2]
+                if not qb_list:
                     continue
+
                 if abs(p1 - p2) >= 2:
+                    # Non-adjacent crossings: parallel words are never adjacent
                     return True
+
+                # Adjacent crossings: valid only if words face opposite directions
+                for q_a in qa_list:
+                    for q_b in qb_list:
+                        above_a = q_a > 0
+                        below_a = q_a < len(other_a) - 1
+                        above_b = q_b > 0
+                        below_b = q_b < len(other_b) - 1
+                        if not (above_a and above_b) and not (below_a and below_b):
+                            return True
+
     return False
 
 
