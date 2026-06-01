@@ -117,6 +117,19 @@ body.snes #board-wrap{background:linear-gradient(180deg,#0a0020,#150030);border:
 }
 body.nes .die.rolling{animation:diceRollNes 1s steps(6,end) both;}
 body.snes .die.rolling{animation:diceRollSnes 1.3s cubic-bezier(.15,.6,.3,1) both;}
+/* ── WIN SCREEN ──────────────────────────── */
+#winScreen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:9999;pointer-events:none;opacity:0;transition:opacity .6s;}
+#winScreen.visible{opacity:1;}
+#winScreen .win-card{pointer-events:auto;text-align:center;padding:24px 28px;max-width:340px;width:90%;}
+.win-title{margin:0 0 10px;}
+.win-words{font-size:14px;line-height:1.9;margin:8px 0;}
+.win-score{font-size:32px;font-weight:bold;margin:6px 0 12px;}
+body.nes #winScreen .win-card{background:var(--nes-panel);border:4px solid var(--nes-hi);box-shadow:6px 6px 0 #000;}
+body.nes .win-title{color:var(--nes-hi);font-family:'Press Start 2P',monospace;font-size:clamp(10px,2.5vw,13px);text-shadow:2px 2px 0 #000;line-height:2;}
+body.nes .win-score{color:var(--nes-hi);}
+body.snes #winScreen .win-card{background:linear-gradient(160deg,rgba(80,20,140,.96),rgba(40,10,90,.98));border:2px solid rgba(255,170,0,.5);border-radius:20px;box-shadow:0 16px 48px rgba(100,0,200,.6),inset 0 1px 0 rgba(255,255,255,.15);}
+body.snes .win-title{font-size:clamp(18px,4vw,26px);color:var(--snes-hi);text-shadow:2px 2px 12px rgba(255,150,0,.5);}
+body.snes .win-score{color:var(--snes-hi);text-shadow:0 0 16px rgba(255,150,0,.5);}
 /* ── SHARED LAYOUT ───────────────────────── */
 .wrap{max-width:1100px;margin:0 auto;padding:16px;}
 .top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;}
@@ -405,6 +418,8 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
   function sfx(n){ if(!soundOn) return; try{ const s=SFX[state.theme]; if(s&&s[n]) s[n](); }catch(e){} }
 
   function launchFireworks(){
+    playFanfare();
+    setTimeout(showWinScreen, 2000);
     const canvas=$('fireworksCanvas');
     canvas.width=window.innerWidth; canvas.height=window.innerHeight;
     const ctx=canvas.getContext('2d');
@@ -452,6 +467,85 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     requestAnimationFrame(frame);
   }
 
+  function playRollSound(){
+    if(!soundOn) return;
+    const c=getAudioCtx(); if(!c) return;
+    const nes=state.theme==='nes';
+    [0,.09,.17,.27,.37,.47,.57,.68,.8,.93,1.07,1.22,1.38,1.52].forEach((t,i,a)=>{
+      const freq=180+Math.random()*(nes?380:260);
+      const vol=(nes?.1:.065)*(1-i/a.length*.65);
+      const dur=nes?.04:.055;
+      const o=c.createOscillator(),g=c.createGain();
+      o.connect(g);g.connect(c.destination);
+      o.type=nes?'square':'triangle';o.frequency.value=freq;
+      g.gain.setValueAtTime(vol,c.currentTime+t);
+      g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+t+dur);
+      o.start(c.currentTime+t);o.stop(c.currentTime+t+dur+0.01);
+    });
+  }
+
+  function playFanfare(){
+    if(!soundOn) return;
+    const c=getAudioCtx(); if(!c) return;
+    const nes=state.theme==='nes';
+    function n(t,freq,dur,vol){
+      const o=c.createOscillator(),g=c.createGain();
+      o.connect(g);g.connect(c.destination);
+      o.type=nes?'square':'sine';o.frequency.value=freq;
+      g.gain.setValueAtTime(vol,c.currentTime+t);
+      g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+t+dur);
+      o.start(c.currentTime+t);o.stop(c.currentTime+t+dur+0.05);
+    }
+    if(nes){
+      n(0,523,.09,.11);n(.07,659,.09,.11);n(.14,784,.09,.11);
+      n(.21,1047,.24,.13);
+      n(.30,784,.07,.09);n(.37,988,.07,.09);
+      n(.44,1047,.55,.14);
+    } else {
+      n(0,523,.13,.06);n(.10,659,.13,.06);n(.20,784,.13,.06);
+      n(.32,1047,.38,.08);n(.32,784,.38,.03);
+      n(.45,880,.10,.05);
+      n(.55,1047,.65,.09);n(.55,659,.65,.04);
+    }
+  }
+
+  function showWinScreen(){
+    const ex=document.getElementById('winScreen');
+    if(ex) ex.remove();
+    const ch=state.challenge.active;
+    const outer=document.createElement('div');
+    outer.id='winScreen';
+    const card=document.createElement('div');
+    card.className='win-card card';
+    if(ch){
+      const wc=state.challenge.wordCount;
+      card.innerHTML=
+        '<div class="win-title">Challenge<br>Complete!</div>'+
+        '<div class="win-score">'+state.challenge.score+' pts</div>'+
+        '<div class="win-words">All '+wc+' word'+(wc!==1?'s':'')+' found!</div>'+
+        '<div class="row" style="justify-content:center;margin-top:14px">'+
+          '<button id="winMenuBtn">Menu</button>'+
+        '</div>';
+    } else {
+      const words=collectRuns(state.placed).filter(r=>r.word.length>=3).map(r=>r.word.toUpperCase());
+      const hints=state.hintCount;
+      card.innerHTML=
+        '<div class="win-title">Puzzle Solved!</div>'+
+        '<div class="win-words">'+words.join(' · ')+'</div>'+
+        (hints?'<div class="sub" style="margin:8px 0">Hints used: '+hints+'</div>':'')+
+        '<div class="row" style="justify-content:center;gap:12px;margin-top:14px">'+
+          '<button id="winNewRollBtn" class="good">New Roll</button>'+
+          '<button id="winMenuBtn">Menu</button>'+
+        '</div>';
+    }
+    outer.appendChild(card);
+    document.body.appendChild(outer);
+    requestAnimationFrame(()=>outer.classList.add('visible'));
+    document.getElementById('winMenuBtn').onclick=()=>{outer.remove();showMenu();};
+    const nrb=document.getElementById('winNewRollBtn');
+    if(nrb) nrb.onclick=()=>{outer.remove();newRoll();};
+  }
+
   function toggleMusic(){
     unlockAudio();
     musicOn=!musicOn;
@@ -481,6 +575,7 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     $('startClassic').textContent=m==='manual'?'Play With My Dice':'Roll Virtual Dice';
   }
   function showMenu(){
+    const ws=document.getElementById('winScreen'); if(ws) ws.remove();
     state.challenge.active=false;
     $('gameScreen').classList.add('hidden'); $('menuScreen').classList.remove('hidden');
   }
@@ -759,7 +854,7 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     $('puzzleNum').textContent='#'+puzzleNum;
     $('hintBox').textContent=''; $('hintCount').textContent='0';
     renderTray(); renderBoard();
-    sfx('roll');
+    playRollSound();
     requestAnimationFrame(()=>{
       [...document.querySelectorAll('#tray .die.available')].forEach((die,i)=>{
         setTimeout(()=>{
@@ -798,6 +893,7 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     }
   }
   function newRoll(){
+    const ws=document.getElementById('winScreen'); if(ws) ws.remove();
     if(Object.keys(state.placed).length>0 && !confirm('Roll new dice? Your current progress will be lost.')) return;
     startClassic();
   }
