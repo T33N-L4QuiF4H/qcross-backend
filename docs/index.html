@@ -275,7 +275,7 @@ body.snes #enterMyRollBtn:active{transform:translateY(2px);box-shadow:inset 0 2p
       <input id="manualLetters" placeholder="Enter 12 letters e.g. AEIOUYBCDEFG"/>
       <div class="sub" style="margin-top:4px">Enter exactly 12 letters matching your physical dice roll.</div>
     </div>
-    <div class="row" style="margin-top:12px">
+    <div class="row" style="margin-top:12px;align-items:flex-start">
       <button id="startClassic" class="good">Roll Virtual Dice</button>
       <button id="enterMyRollBtn" data-mode="manual" class="hidden">Roll Physical Dice</button>
       <svg id="enterMyRollIllo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 82" width="112" height="76" class="hidden" style="flex-shrink:0;vertical-align:middle">
@@ -643,7 +643,7 @@ body.snes #enterMyRollBtn:active{transform:translateY(2px);box-shadow:inset 0 2p
     document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));
     $('manualInput').classList.toggle('hidden',m!=='manual');
     $('enterMyRollBtn').classList.toggle('hidden',m!=='classic');
-    $('enterMyRollIllo').classList.toggle('hidden',m!=='manual');
+    $('enterMyRollIllo').classList.toggle('hidden',m!=='classic');
     const btn=$('startClassic');
     btn.textContent='Roll Virtual Dice';
     btn.onclick = m==='challenge' ? startChallenge : startClassic;
