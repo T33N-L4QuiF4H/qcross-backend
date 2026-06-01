@@ -853,6 +853,13 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     return newLock;
   }
 
+  function _otherLockedKeys(ch, wordIdx){
+    // Map of key -> letter for all locked words except wordIdx
+    const m=new Map();
+    ch.lockedWordKeys.forEach((ks,i)=>{ if(i!==wordIdx&&ks) ks.forEach(k=>{ if(state.placed[k]) m.set(k,state.placed[k].letter); }); });
+    return m;
+  }
+
   function pickUpLockedWord(wordIdx){
     const ch=state.challenge;
     const keys=ch.lockedWordKeys[wordIdx];
@@ -860,19 +867,22 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     const [r0,c0]=keys[0].split(',').map(Number);
     const [r1,c1]=keys[1].split(',').map(Number);
     const direction=r0===r1?'H':'V';
+    // Save tile data BEFORE any deletion
     const tiles=keys.map(k=>({...state.placed[k]}));
+    // Cells shared with other locked words (crossings) — must NOT be deleted
+    const otherLocked=_otherLockedKeys(ch,wordIdx);
     // Return all non-locked tiles to tray
     const allLockedKeys=new Set(ch.lockedWordKeys.flatMap(ks=>ks||[]));
     Object.keys(state.placed).forEach(k=>{ if(!allLockedKeys.has(k)) delete state.placed[k]; });
-    // Remove this word from board
-    keys.forEach(k=>delete state.placed[k]);
+    // Remove only EXCLUSIVE tiles of this word (crossing tiles stay — they belong to other words)
+    keys.forEach(k=>{ if(!otherLocked.has(k)) delete state.placed[k]; });
     ch.lockedWordKeys[wordIdx]=null;
     ch.wordsFound[wordIdx]=false;
     ch.movingWord={wordIdx,direction,tiles,word:ch.words[wordIdx],originalKeys:keys};
     state.selected=null; state.selectedCell=null;
     sfx('select');
     renderTray(); renderBoard(); renderChallengePanel();
-    $('statusBar').textContent='Moving "'+ch.words[wordIdx]+'" — tap a cell to place the first letter. Tap any locked tile to cancel.';
+    $('statusBar').textContent='Moving "'+ch.words[wordIdx]+'" — tap where the first letter should go. Tap a locked tile to cancel.';
     $('statusBar').classList.remove('hidden');
   }
 
@@ -880,7 +890,9 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     const ch=state.challenge;
     if(!ch.movingWord) return;
     const {wordIdx,tiles,originalKeys}=ch.movingWord;
-    originalKeys.forEach((k,i)=>{ state.placed[k]={...tiles[i]}; });
+    const otherLocked=_otherLockedKeys(ch,wordIdx);
+    // Only restore EXCLUSIVE tiles (crossing tiles are already present)
+    originalKeys.forEach((k,i)=>{ if(!otherLocked.has(k)) state.placed[k]={...tiles[i]}; });
     ch.lockedWordKeys[wordIdx]=originalKeys;
     ch.wordsFound[wordIdx]=true;
     ch.movingWord=null;
@@ -892,7 +904,9 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     const ch=state.challenge;
     const keys=ch.lockedWordKeys[wordIdx];
     if(!keys) return;
-    keys.forEach(k=>delete state.placed[k]);
+    const otherLocked=_otherLockedKeys(ch,wordIdx);
+    // Only remove EXCLUSIVE tiles (crossing tiles belong to other locked words)
+    keys.forEach(k=>{ if(!otherLocked.has(k)) delete state.placed[k]; });
     ch.lockedWordKeys[wordIdx]=null;
     ch.wordsFound[wordIdx]=false;
     sfx('remove');
@@ -908,18 +922,22 @@ body.snes .die.available.found-tray{border-color:var(--good);box-shadow:inset 0 
     const newKeys=tiles.map((_,i)=>direction==='H'?r+','+(c+i):(r+i)+','+c);
     // Bounds check
     if(newKeys.some(k=>{ const [kr,kc]=k.split(',').map(Number); return kr<0||kr>=GRID_ROWS||kc<0||kc>=GRID_COLS; })){
-      sfx('error');
-      $('statusBar').textContent='"'+word+'" doesn\'t fit there — too close to the edge.';
-      return;
+      sfx('error'); $('statusBar').textContent='"'+word+'" doesn\'t fit there — too close to the edge.'; return;
     }
-    // Overlap with other locked tiles
-    const otherLocked=new Set(ch.lockedWordKeys.flatMap((ks,i)=>i!==wordIdx&&ks?ks:[]));
-    if(newKeys.some(k=>otherLocked.has(k))){
-      sfx('error');
-      $('statusBar').textContent='Can\'t place "'+word+'" there — overlaps with a locked word.';
-      return;
+    const otherLocked=_otherLockedKeys(ch,wordIdx);
+    // Validate each cell: empty is fine; occupied by other locked word is OK only if letters match
+    for(let i=0;i<newKeys.length;i++){
+      const k=newKeys[i];
+      if(otherLocked.has(k) && otherLocked.get(k)!==tiles[i].letter){
+        sfx('error'); $('statusBar').textContent='Letters don\'t match at the crossing — try a different position.'; return;
+      }
     }
-    newKeys.forEach((k,i)=>{ state.placed[k]={...tiles[i]}; });
+    // If other locked words exist, the word MUST cross at least one
+    if(otherLocked.size>0 && !newKeys.some(k=>otherLocked.has(k))){
+      sfx('error'); $('statusBar').textContent='"'+word+'" must cross another locked word — tap where the shared letter overlaps.'; return;
+    }
+    // Place tiles; skip crossing cells (tile already there from other word)
+    newKeys.forEach((k,i)=>{ if(!otherLocked.has(k)) state.placed[k]={...tiles[i]}; });
     ch.lockedWordKeys[wordIdx]=newKeys;
     ch.wordsFound[wordIdx]=true;
     ch.movingWord=null;
