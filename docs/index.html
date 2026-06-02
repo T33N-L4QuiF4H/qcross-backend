@@ -740,15 +740,20 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
     const maxR=Math.max(...allCoords.map(([r])=>r));
     const minC=Math.min(...allCoords.map(([,c])=>c));
     const maxC=Math.max(...allCoords.map(([,c])=>c));
-    // Grow dimension to fit content, max 12×12
-    state.boardDim=Math.min(Math.max(state.boardDim,maxR-minR+1,maxC-minC+1,getMinDim()),12);
+    // Grow to fit content + 1-cell buffer each side, max 12×12
+    state.boardDim=Math.min(Math.max(state.boardDim,maxR-minR+3,maxC-minC+3,getMinDim()),12);
     const dim=state.boardDim,h=Math.floor(dim/2);
     let {r:ro,c:co}=state.boardOffset;
-    // Only shift origin if content overflows the current viewport (12×12 hard limit reached)
-    if(minR<ro-h)          ro=minR+h;
-    else if(maxR>ro-h+dim-1) ro=maxR-(dim-1-h);
-    if(minC<co-h)          co=minC+h;
-    else if(maxC>co-h+dim-1) co=maxC-(dim-1-h);
+    // Shift origin to keep 1-cell buffer between content and viewport edge
+    if(minR<ro-h+1)            ro=minR+h-1;
+    else if(maxR>ro-h+dim-2)   ro=maxR-(dim-2-h);
+    if(minC<co-h+1)            co=minC+h-1;
+    else if(maxC>co-h+dim-2)   co=maxC-(dim-2-h);
+    // Safety: if buffer can't fit (content fills full 12×12), just keep content visible
+    if(minR<ro-h)              ro=minR+h;
+    else if(maxR>ro-h+dim-1)   ro=maxR-(dim-1-h);
+    if(minC<co-h)              co=minC+h;
+    else if(maxC>co-h+dim-1)   co=maxC-(dim-1-h);
     state.boardOffset={r:ro,c:co};
   }
 
