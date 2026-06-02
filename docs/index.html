@@ -1573,6 +1573,11 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
     $('scanDiceBtn').onclick=()=>$('diceImageInput').click();
     $('diceImageInput').onchange=e=>{ if(e.target.files[0]) scanDice(e.target.files[0]); e.target.value=''; };
     document.addEventListener('keydown', onKeyDown);
+    window.addEventListener('beforeunload', e=>{
+      const gameActive=!$('gameScreen').classList.contains('hidden');
+      const hasProgress=Object.keys(state.placed).length>0;
+      if(gameActive&&hasProgress){ e.preventDefault(); return e.returnValue=''; }
+    });
     document.body.className='snes';
     state.theme='snes';
     $('nesBtn').classList.remove('active');
