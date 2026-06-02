@@ -247,128 +247,24 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
   </div>
 
   <div id="menuScreen" class="card">
-    <!-- ── 8-BIT / NES LOGO ─────────────────────────────── -->
-    <svg id="logoNes" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" shape-rendering="crispEdges" class="hidden" style="width:320px;max-width:100%;margin:0 auto 16px;display:block">
-      <!-- Starfield -->
-      <rect width="320" height="180" fill="#000820"/>
-      <rect x="14" y="7" width="2" height="2" fill="#fff"/><rect x="44" y="16" width="2" height="2" fill="#fff"/><rect x="78" y="5" width="2" height="2" fill="#fff"/><rect x="118" y="13" width="2" height="2" fill="#fff"/><rect x="198" y="8" width="2" height="2" fill="#fff"/><rect x="240" y="4" width="2" height="2" fill="#fff"/><rect x="285" y="18" width="2" height="2" fill="#fff"/><rect x="308" y="6" width="2" height="2" fill="#fff"/><rect x="56" y="28" width="2" height="2" fill="#fff"/><rect x="172" y="24" width="2" height="2" fill="#fff"/><rect x="260" y="30" width="2" height="2" fill="#fff"/><rect x="34" y="150" width="2" height="2" fill="#fff"/><rect x="150" y="157" width="2" height="2" fill="#fff"/><rect x="292" y="152" width="2" height="2" fill="#fff"/>
-      <!-- Title shadow then title -->
-      <text x="162" y="27" text-anchor="middle" font-family="'Press Start 2P',monospace" font-size="13" fill="#000000">DICE~WORDS</text>
-      <text x="160" y="25" text-anchor="middle" font-family="'Press Start 2P',monospace" font-size="13" fill="#F8D800">DICE~WORDS</text>
-      <text x="160" y="39" text-anchor="middle" font-family="'Press Start 2P',monospace" font-size="5" fill="#bcbcbc">THE DICE CROSSWORD PUZZLE</text>
-      <!-- Tin body -->
-      <rect x="106" y="138" width="108" height="4" fill="#000" opacity=".5"/>
-      <rect x="100" y="54" width="120" height="10" fill="#e8c030"/>
-      <rect x="100" y="54" width="120" height="3" fill="#fff880"/>
-      <rect x="100" y="61" width="120" height="3" fill="#9a7808"/>
-      <rect x="104" y="64" width="112" height="72" fill="#c89820"/>
-      <rect x="208" y="64" width="8" height="72" fill="#7a6010"/>
-      <rect x="104" y="128" width="104" height="8" fill="#7a6010"/>
-      <rect x="114" y="72" width="86" height="50" fill="#9a7808"/>
-      <rect x="116" y="74" width="82" height="46" fill="#b09018"/>
-      <rect x="116" y="74" width="82" height="3" fill="#c0a828"/>
-      <text x="157" y="98" text-anchor="middle" font-family="'Press Start 2P',monospace" font-size="8" fill="#000">DICE</text>
-      <text x="157" y="112" text-anchor="middle" font-family="'Press Start 2P',monospace" font-size="7" fill="#000">~WORDS</text>
-      <!-- Die Z (top-left) — Z·A·N·E clockwise = ZANE -->
-      <g transform="translate(15,54) rotate(-10,14,14)">
-        <rect x="0" y="0" width="28" height="28" fill="#f0f0e0" stroke="#000" stroke-width="2"/>
-        <rect x="2" y="2" width="24" height="3" fill="#fff"/><rect x="2" y="2" width="3" height="24" fill="#fff"/>
-        <rect x="2" y="23" width="24" height="3" fill="#888870"/><rect x="23" y="2" width="3" height="24" fill="#888870"/>
-        <rect x="4" y="4" width="3" height="3" fill="#aaa880" opacity=".5"/><rect x="21" y="4" width="3" height="3" fill="#aaa880" opacity=".5"/>
-        <rect x="4" y="21" width="3" height="3" fill="#aaa880" opacity=".5"/><rect x="21" y="21" width="3" height="3" fill="#aaa880" opacity=".5"/>
-        <text x="14" y="21" text-anchor="middle" font-family="'Press Start 2P',monospace" font-size="11" fill="#1a1a1a">Z</text>
-      </g>
-      <!-- Die A (top-right) -->
-      <g transform="translate(275,50) rotate(8,14,14)">
-        <rect x="0" y="0" width="28" height="28" fill="#f0f0e0" stroke="#000" stroke-width="2"/>
-        <rect x="2" y="2" width="24" height="3" fill="#fff"/><rect x="2" y="2" width="3" height="24" fill="#fff"/>
-        <rect x="2" y="23" width="24" height="3" fill="#888870"/><rect x="23" y="2" width="3" height="24" fill="#888870"/>
-        <rect x="4" y="4" width="3" height="3" fill="#aaa880" opacity=".5"/><rect x="21" y="4" width="3" height="3" fill="#aaa880" opacity=".5"/>
-        <rect x="4" y="21" width="3" height="3" fill="#aaa880" opacity=".5"/><rect x="21" y="21" width="3" height="3" fill="#aaa880" opacity=".5"/>
-        <text x="14" y="21" text-anchor="middle" font-family="'Press Start 2P',monospace" font-size="11" fill="#1a1a1a">A</text>
-      </g>
-      <!-- Die N (bottom-left) -->
-      <g transform="translate(18,108) rotate(6,14,14)">
-        <rect x="0" y="0" width="28" height="28" fill="#f0f0e0" stroke="#000" stroke-width="2"/>
-        <rect x="2" y="2" width="24" height="3" fill="#fff"/><rect x="2" y="2" width="3" height="24" fill="#fff"/>
-        <rect x="2" y="23" width="24" height="3" fill="#888870"/><rect x="23" y="2" width="3" height="24" fill="#888870"/>
-        <rect x="4" y="4" width="3" height="3" fill="#aaa880" opacity=".5"/><rect x="21" y="4" width="3" height="3" fill="#aaa880" opacity=".5"/>
-        <rect x="4" y="21" width="3" height="3" fill="#aaa880" opacity=".5"/><rect x="21" y="21" width="3" height="3" fill="#aaa880" opacity=".5"/>
-        <text x="14" y="21" text-anchor="middle" font-family="'Press Start 2P',monospace" font-size="11" fill="#1a1a1a">N</text>
-      </g>
-      <!-- Die E (bottom-right) -->
-      <g transform="translate(279,112) rotate(-6,14,14)">
-        <rect x="0" y="0" width="28" height="28" fill="#f0f0e0" stroke="#000" stroke-width="2"/>
-        <rect x="2" y="2" width="24" height="3" fill="#fff"/><rect x="2" y="2" width="3" height="24" fill="#fff"/>
-        <rect x="2" y="23" width="24" height="3" fill="#888870"/><rect x="23" y="2" width="3" height="24" fill="#888870"/>
-        <rect x="4" y="4" width="3" height="3" fill="#aaa880" opacity=".5"/><rect x="21" y="4" width="3" height="3" fill="#aaa880" opacity=".5"/>
-        <rect x="4" y="21" width="3" height="3" fill="#aaa880" opacity=".5"/><rect x="21" y="21" width="3" height="3" fill="#aaa880" opacity=".5"/>
-        <text x="14" y="21" text-anchor="middle" font-family="'Press Start 2P',monospace" font-size="11" fill="#1a1a1a">E</text>
-      </g>
-      <text x="160" y="168" text-anchor="middle" font-family="'Press Start 2P',monospace" font-size="5" fill="#00a800">12 DICE * SOLO PLAY * SERIOUS FUN</text>
-      <!-- NES corner brackets -->
-      <rect x="2" y="2" width="10" height="2" fill="#F8D800"/><rect x="2" y="2" width="2" height="10" fill="#F8D800"/>
-      <rect x="308" y="2" width="10" height="2" fill="#F8D800"/><rect x="316" y="2" width="2" height="10" fill="#F8D800"/>
-      <rect x="2" y="176" width="10" height="2" fill="#F8D800"/><rect x="2" y="168" width="2" height="10" fill="#F8D800"/>
-      <rect x="308" y="176" width="10" height="2" fill="#F8D800"/><rect x="316" y="168" width="2" height="10" fill="#F8D800"/>
-    </svg>
-
-    <!-- ── 16-BIT / SNES LOGO ────────────────────────────── -->
-    <svg id="logoSnes" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" style="width:320px;max-width:100%;margin:0 auto 16px;display:block">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" style="width:320px;max-width:100%;margin:0 auto 16px;display:block">
       <defs>
-        <radialGradient id="slBg" cx="50%" cy="0%" r="90%"><stop offset="0%" stop-color="#3a1580"/><stop offset="100%" stop-color="#080218"/></radialGradient>
-        <radialGradient id="slTin" cx="38%" cy="28%" r="65%"><stop offset="0%" stop-color="#eeeadc"/><stop offset="100%" stop-color="#b89a50"/></radialGradient>
-        <radialGradient id="slShine" cx="30%" cy="20%" r="70%"><stop offset="0%" stop-color="#fff" stop-opacity=".45"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient>
-        <linearGradient id="slDie" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#fffff5"/><stop offset="55%" stop-color="#f5f0e2"/><stop offset="100%" stop-color="#e8e3d4"/></linearGradient>
-        <filter id="slGlow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="2.5" result="b"/><feFlood flood-color="#ffaa00" flood-opacity=".55" result="c"/><feComposite in="c" in2="b" operator="in" result="s"/><feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <radialGradient id="tinGrad" cx="50%" cy="40%" r="60%"><stop offset="0%" stop-color="#e8d5a0"/><stop offset="100%" stop-color="#b89a50"/></radialGradient>
+        <radialGradient id="tinShine" cx="30%" cy="20%" r="70%"><stop offset="0%" stop-color="#fff" stop-opacity=".4"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient>
       </defs>
-      <!-- Background -->
-      <rect width="320" height="180" fill="url(#slBg)"/>
-      <!-- Subtle stars -->
-      <circle cx="20" cy="10" r="1.2" fill="#fff" opacity=".5"/><circle cx="58" cy="22" r="1" fill="#fff" opacity=".4"/><circle cx="96" cy="7" r="1.5" fill="#fff" opacity=".6"/><circle cx="202" cy="14" r="1" fill="#fff" opacity=".5"/><circle cx="262" cy="5" r="1.5" fill="#fff" opacity=".35"/><circle cx="302" cy="19" r="1" fill="#fff" opacity=".5"/><circle cx="38" cy="158" r="1" fill="#fff" opacity=".35"/><circle cx="282" cy="162" r="1.2" fill="#fff" opacity=".4"/>
-      <!-- Horizontal glow bar behind title -->
-      <rect x="0" y="14" width="320" height="22" fill="#ffaa00" opacity=".04"/>
-      <!-- Title with glow -->
-      <text x="160" y="31" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="24" font-weight="900" fill="#ffaa00" filter="url(#slGlow)">Dice~Words</text>
-      <text x="160" y="45" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8" fill="#cc88ff" opacity=".85" letter-spacing="1">THE DICE CROSSWORD PUZZLE</text>
-      <!-- Circular tin (like real Q-Less tin) -->
-      <ellipse cx="160" cy="108" rx="52" ry="8" fill="#000" opacity=".3"/>
-      <circle cx="160" cy="97" r="50" fill="#1e1a10"/>
-      <circle cx="160" cy="97" r="48" fill="url(#slTin)"/>
-      <circle cx="160" cy="97" r="48" fill="url(#slShine)"/>
-      <circle cx="160" cy="97" r="42" fill="none" stroke="#1e1a10" stroke-width="1.5"/>
-      <text x="160" y="90" text-anchor="middle" font-family="Georgia,serif" font-size="11.5" font-style="italic" font-weight="bold" fill="#1a1408">Dice~</text>
-      <text x="160" y="106" text-anchor="middle" font-family="Georgia,serif" font-size="11.5" font-style="italic" font-weight="bold" fill="#1a1408">Words</text>
-      <path d="M146,113 Q160,121 174,113" fill="none" stroke="#1a1408" stroke-width="1" opacity=".4"/>
-      <!-- 3-D dice — Z·A top row, N·E bottom row → spells ZANE -->
-      <!-- Z (upper-left) -->
-      <g transform="translate(62,46) rotate(-14,15,15)">
-        <polygon points="0,5 6,0 30,0 24,5" fill="#e5dfc8"/><polygon points="24,5 30,0 30,26 24,31" fill="#b0a888"/>
-        <rect x="0" y="5" width="24" height="26" rx="4" fill="url(#slDie)" stroke="#1e1a10" stroke-width="1.2"/>
-        <text x="12" y="27" text-anchor="middle" font-size="16" font-weight="900" font-family="system-ui,Arial,sans-serif" fill="#1a1408">Z</text>
-        <text x="3" y="13" font-size="5" fill="#888" opacity=".45" font-family="system-ui,sans-serif">a</text>
-      </g>
-      <!-- A (upper-right) -->
-      <g transform="translate(226,42) rotate(12,15,15)">
-        <polygon points="0,5 6,0 30,0 24,5" fill="#e5dfc8"/><polygon points="24,5 30,0 30,26 24,31" fill="#b0a888"/>
-        <rect x="0" y="5" width="24" height="26" rx="4" fill="url(#slDie)" stroke="#1e1a10" stroke-width="1.2"/>
-        <text x="12" y="27" text-anchor="middle" font-size="16" font-weight="900" font-family="system-ui,Arial,sans-serif" fill="#1a1408">A</text>
-        <text x="20" y="13" font-size="5" fill="#888" opacity=".45" font-family="system-ui,sans-serif">n</text>
-      </g>
-      <!-- N (lower-left) -->
-      <g transform="translate(68,120) rotate(8,15,15)">
-        <polygon points="0,5 6,0 30,0 24,5" fill="#e5dfc8"/><polygon points="24,5 30,0 30,26 24,31" fill="#b0a888"/>
-        <rect x="0" y="5" width="24" height="26" rx="4" fill="url(#slDie)" stroke="#1e1a10" stroke-width="1.2"/>
-        <text x="12" y="27" text-anchor="middle" font-size="16" font-weight="900" font-family="system-ui,Arial,sans-serif" fill="#1a1408">N</text>
-        <text x="3" y="13" font-size="5" fill="#888" opacity=".45" font-family="system-ui,sans-serif">e</text>
-      </g>
-      <!-- E (lower-right) -->
-      <g transform="translate(224,122) rotate(-9,15,15)">
-        <polygon points="0,5 6,0 30,0 24,5" fill="#e5dfc8"/><polygon points="24,5 30,0 30,26 24,31" fill="#b0a888"/>
-        <rect x="0" y="5" width="24" height="26" rx="4" fill="url(#slDie)" stroke="#1e1a10" stroke-width="1.2"/>
-        <text x="12" y="27" text-anchor="middle" font-size="16" font-weight="900" font-family="system-ui,Arial,sans-serif" fill="#1a1408">E</text>
-      </g>
-      <text x="160" y="168" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#ddaaff" opacity=".75">12 Dice · Play Solo · Serious Fun</text>
+      <ellipse cx="160" cy="155" rx="148" ry="18" fill="#8a6a20" opacity=".6"/>
+      <rect x="12" y="30" width="296" height="128" rx="18" fill="url(#tinGrad)" stroke="#8a6a20" stroke-width="3"/>
+      <rect x="12" y="30" width="296" height="128" rx="18" fill="url(#tinShine)"/>
+      <rect x="12" y="30" width="296" height="22" rx="18" fill="#c8a84a" stroke="#8a6a20" stroke-width="2"/>
+      <rect x="12" y="41" width="296" height="11" fill="#c8a84a"/>
+      <rect x="22" y="60" width="276" height="88" rx="10" fill="none" stroke="#8a6a20" stroke-width="2" opacity=".5"/>
+      <text x="160" y="102" text-anchor="middle" font-family="'Press Start 2P',monospace" font-size="22" fill="#1a0a00" letter-spacing="2">Dice~Words</text>
+      <text x="160" y="120" text-anchor="middle" font-family="'Press Start 2P',monospace" font-size="7" fill="#3a1a00" letter-spacing="1">THE DICE CROSSWORD PUZZLE</text>
+      <text x="160" y="137" text-anchor="middle" font-family="Georgia,serif" font-size="10" fill="#5a3a00" font-style="italic">12 Dice · Play Solo · Serious Fun</text>
+      <g transform="translate(28,62) rotate(-18)"><rect width="22" height="22" rx="4" fill="#f5f0e0" stroke="#888" stroke-width="1.5"/><text x="11" y="16" text-anchor="middle" font-size="13" font-weight="bold" fill="#222">Z</text></g>
+      <g transform="translate(262,58) rotate(14)"><rect width="22" height="22" rx="4" fill="#f5f0e0" stroke="#888" stroke-width="1.5"/><text x="11" y="16" text-anchor="middle" font-size="13" font-weight="bold" fill="#222">A</text></g>
+      <g transform="translate(30,110) rotate(8)"><rect width="22" height="22" rx="4" fill="#f5f0e0" stroke="#888" stroke-width="1.5"/><text x="11" y="16" text-anchor="middle" font-size="13" font-weight="bold" fill="#222">N</text></g>
+      <g transform="translate(268,108) rotate(-10)"><rect width="22" height="22" rx="4" fill="#f5f0e0" stroke="#888" stroke-width="1.5"/><text x="11" y="16" text-anchor="middle" font-size="13" font-weight="bold" fill="#222">E</text></g>
     </svg>
     <div><strong>Start a game</strong><div class="sub" style="margin:4px 0 12px">Choose a mode, then start playing.</div></div>
     <div class="row" style="align-items:center">
@@ -752,8 +648,6 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
     document.body.className=t;
     $('nesBtn').classList.toggle('active',t==='nes');
     $('snesBtn').classList.toggle('active',t==='snes');
-    $('logoNes').classList.toggle('hidden',t!=='nes');
-    $('logoSnes').classList.toggle('hidden',t!=='snes');
     stopBgMusic();
     if(musicOn) playMusic(t);
   }
