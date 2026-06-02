@@ -733,27 +733,37 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
   function getMinDim(){ return window.innerWidth<=820 ? 7 : 9; }
 
   function ensureBoardFits(){
-    const allCoords=Object.keys(state.placed).map(k=>k.split(',').map(Number));
-    if(state.typingCursor) allCoords.push([state.typingCursor.r,state.typingCursor.c]);
-    if(!allCoords.length) return;
+    const placedCoords=Object.keys(state.placed).map(k=>k.split(',').map(Number));
+    const tc=state.typingCursor;
+    if(!placedCoords.length&&!tc) return;
+
+    // boardDim (cell size) only grows when tiles are actually placed — not from cursor
+    if(placedCoords.length){
+      const pMinR=Math.min(...placedCoords.map(([r])=>r));
+      const pMaxR=Math.max(...placedCoords.map(([r])=>r));
+      const pMinC=Math.min(...placedCoords.map(([,c])=>c));
+      const pMaxC=Math.max(...placedCoords.map(([,c])=>c));
+      state.boardDim=Math.min(Math.max(state.boardDim,pMaxR-pMinR+3,pMaxC-pMinC+3,getMinDim()),12);
+    }
+
+    // boardOffset pans to keep placed tiles + cursor visible (no cell-size change)
+    const allCoords=[...placedCoords];
+    if(tc) allCoords.push([tc.r,tc.c]);
     const minR=Math.min(...allCoords.map(([r])=>r));
     const maxR=Math.max(...allCoords.map(([r])=>r));
     const minC=Math.min(...allCoords.map(([,c])=>c));
     const maxC=Math.max(...allCoords.map(([,c])=>c));
-    // Grow to fit content + 1-cell buffer each side, max 12×12
-    state.boardDim=Math.min(Math.max(state.boardDim,maxR-minR+3,maxC-minC+3,getMinDim()),12);
     const dim=state.boardDim,h=Math.floor(dim/2);
     let {r:ro,c:co}=state.boardOffset;
-    // Shift origin to keep 1-cell buffer between content and viewport edge
-    if(minR<ro-h+1)            ro=minR+h-1;
-    else if(maxR>ro-h+dim-2)   ro=maxR-(dim-2-h);
-    if(minC<co-h+1)            co=minC+h-1;
-    else if(maxC>co-h+dim-2)   co=maxC-(dim-2-h);
-    // Safety: if buffer can't fit (content fills full 12×12), just keep content visible
-    if(minR<ro-h)              ro=minR+h;
-    else if(maxR>ro-h+dim-1)   ro=maxR-(dim-1-h);
-    if(minC<co-h)              co=minC+h;
-    else if(maxC>co-h+dim-1)   co=maxC-(dim-1-h);
+    if(minR<ro-h+1)           ro=minR+h-1;
+    else if(maxR>ro-h+dim-2)  ro=maxR-(dim-2-h);
+    if(minC<co-h+1)           co=minC+h-1;
+    else if(maxC>co-h+dim-2)  co=maxC-(dim-2-h);
+    // Safety fallback — keep content visible if buffer can't be maintained
+    if(minR<ro-h)             ro=minR+h;
+    else if(maxR>ro-h+dim-1)  ro=maxR-(dim-1-h);
+    if(minC<co-h)             co=minC+h;
+    else if(maxC>co-h+dim-1)  co=maxC-(dim-1-h);
     state.boardOffset={r:ro,c:co};
   }
 
