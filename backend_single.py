@@ -452,9 +452,6 @@ class ChallengeHintRequest(BaseModel):
     hint_number: int = 1
     previous_hints: List[str] = []
 
-class DiceImageRequest(BaseModel):
-    image: str        # base64-encoded image data
-    media_type: str = "image/jpeg"
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 
@@ -535,50 +532,3 @@ def challenge(req: ChallengeRequest):
 def challenge_hint(req: ChallengeHintRequest):
     return {"hint": generate_extra_hint(req.word, req.clue, req.hint_number, req.previous_hints)}
 
-@app.post("/recognize-dice")
-def recognize_dice(req: DiceImageRequest):
-    client = _anthropic_client()
-    if not client:
-        return {"error": "AI not available", "letters": []}
-    try:
-        r = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=200,
-            system=(
-                "You are a precise letter-recognition assistant. "
-                "When shown a photo of letter dice you identify only the letters "
-                "you can actually see — never guess or fabricate."
-            ),
-            messages=[{
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image",
-                        "source": {
-                            "type": "base64",
-                            "media_type": req.media_type,
-                            "data": req.image,
-                        }
-                    },
-                    {
-                        "type": "text",
-                        "text": (
-                            "This photo shows Q-Less letter dice — small cream/ivory cubes with "
-                            "one large black letter on each face. "
-                            "Carefully examine each die and read the letter facing most clearly "
-                            "toward the camera (usually the top face). "
-                            "Output ONLY the letters you can clearly read as a single uppercase "
-                            "string with no spaces (example: ABTCESRNLIMO). "
-                            "Use ? for any die whose letter you cannot confidently read. "
-                            "CRITICAL: Only report letters that are physically visible in this "
-                            "image — do not guess or invent letters."
-                        )
-                    }
-                ]
-            }]
-        )
-        raw = r.content[0].text.strip().upper()
-        letters = [c for c in raw if c.isalpha()][:12]
-        return {"letters": letters, "raw": raw}
-    except Exception as e:
-        return {"error": str(e), "letters": []}

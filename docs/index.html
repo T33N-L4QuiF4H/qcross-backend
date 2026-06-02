@@ -284,12 +284,8 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
       </svg>
     </div>
     <div id="manualInput" class="hidden" style="margin-top:10px">
-      <div class="row" style="gap:6px;margin-bottom:6px">
-        <input id="manualLetters" placeholder="Enter 12 letters e.g. AEIOUYBCDEFG" style="flex:1;min-width:0"/>
-        <button id="scanDiceBtn" style="padding:8px 10px;white-space:nowrap">📷 Upload / Take Photo</button>
-      </div>
-      <div class="sub" id="scanStatus">Enter letters manually or tap 📷 Scan to photograph your dice.</div>
-      <input id="diceImageInput" type="file" accept="image/*" style="display:none"/>
+      <input id="manualLetters" placeholder="Enter 12 letters e.g. AEIOUYBCDEFG"/>
+      <div class="sub" id="scanStatus" style="margin-top:4px">Enter exactly 12 letters matching your physical dice roll.</div>
     </div>
     <div id="startRow" class="row hidden" style="margin-top:12px;align-items:flex-start">
       <button id="startClassic" class="good">Roll Virtual Dice</button>
@@ -702,53 +698,6 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
     btn.textContent='Roll Virtual Dice'; btn.disabled=false; btn._isPhysical=false;
     btn.onclick=m==='challenge'?()=>startChallenge():startClassic;
   }
-  function resizeImageForUpload(file, cb){
-    const reader=new FileReader();
-    reader.onload=e=>{
-      const img=new Image();
-      img.onload=()=>{
-        const MAX=1600;
-        let w=img.width,h=img.height;
-        if(w>MAX||h>MAX){ const s=Math.min(MAX/w,MAX/h); w=Math.round(w*s); h=Math.round(h*s); }
-        const canvas=document.createElement('canvas');
-        canvas.width=w; canvas.height=h;
-        canvas.getContext('2d').drawImage(img,0,0,w,h);
-        canvas.toBlob(blob=>{
-          const r2=new FileReader();
-          r2.onload=e2=>cb(e2.target.result.split(',')[1], file.type||'image/jpeg');
-          r2.readAsDataURL(blob);
-        },'image/jpeg',0.85);
-      };
-      img.src=e.target.result;
-    };
-    reader.readAsDataURL(file);
-  }
-
-  async function scanDice(file){
-    const status=$('scanStatus');
-    status.textContent='Recognizing dice…';
-    $('scanDiceBtn').disabled=true;
-    resizeImageForUpload(file,(b64,mtype)=>{
-      fetch(API+'/recognize-dice',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({image:b64,media_type:mtype})
-      }).then(r=>r.json()).then(p=>{
-        if(p.letters && p.letters.length===12){
-          $('manualLetters').value=p.letters.join('');
-          validateManualLetters();
-        } else if(p.letters && p.letters.length>0){
-          $('manualLetters').value=p.letters.join('');
-          validateManualLetters();
-        } else {
-          status.textContent='Could not read the dice — please enter letters manually.';
-        }
-      }).catch(()=>{
-        status.textContent='Scan failed — please enter letters manually.';
-      }).finally(()=>{ $('scanDiceBtn').disabled=false; });
-    });
-  }
-
   function showMenu(){
     const ws=document.getElementById('winScreen'); if(ws) ws.remove();
     state.challenge.active=false;
@@ -1559,7 +1508,7 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
       $('manualInput').classList.remove('hidden');
       $('enterMyRollIllo').classList.remove('hidden');
       $('manualLetters').value='';
-      $('scanStatus').textContent='Enter letters manually or tap 📷 Upload / Take Photo.';
+      $('scanStatus').textContent='Enter exactly 12 letters matching your physical dice roll.';
       const btn=$('startClassic');
       btn._isPhysical=true; btn.disabled=true;
       if(state.mode==='challenge'){
@@ -1570,8 +1519,6 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
       }
     };
     $('manualLetters').addEventListener('input', validateManualLetters);
-    $('scanDiceBtn').onclick=()=>$('diceImageInput').click();
-    $('diceImageInput').onchange=e=>{ if(e.target.files[0]) scanDice(e.target.files[0]); e.target.value=''; };
     document.addEventListener('keydown', onKeyDown);
     window.addEventListener('beforeunload', e=>{
       const gameActive=!$('gameScreen').classList.contains('hidden');
