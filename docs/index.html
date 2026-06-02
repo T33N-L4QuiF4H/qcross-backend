@@ -188,15 +188,7 @@ button{appearance:none;cursor:pointer;touch-action:manipulation;font:inherit;}
 #statusBar{margin:10px 0;padding:10px 12px;border-left:4px solid var(--good);font-size:12px;line-height:1.6;}
 #hintBox{margin:8px 0;min-height:20px;font-size:12px;line-height:1.6;}
 .two{display:grid;grid-template-columns:min(320px,38vw) 1fr;gap:14px;align-items:start;}
-@media(max-width:820px){
-  .two{display:flex;flex-direction:column;height:calc(100svh - 100px);gap:8px;overflow:hidden;}
-  #board-outer{order:-1;flex:0 0 55%;min-height:0;display:flex;align-items:flex-start;justify-content:center;}
-  #board-wrap{width:min(100%,calc(55svh - 70px));aspect-ratio:1/1;margin:0;}
-  .two>.card{flex:1;overflow-y:auto;min-height:0;}
-  #tray{grid-template-columns:repeat(6,1fr);gap:4px;}
-  .score-row{gap:10px;}
-  .two>.card .row{flex-wrap:nowrap;}
-}
+@media(max-width:820px){.two{grid-template-columns:1fr;}#board-outer{order:-1;}}
 .score-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;}
 .score-item{text-align:center;}
 .score-item .lbl{font-size:9px;color:var(--muted);margin-top:2px;}
@@ -817,7 +809,9 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
     const r0=ro-h, r1=r0+dim-1, c0=co-h, c1=c0+dim-1;
 
     const wrap=$('board-wrap');
-    const containerW=wrap.clientWidth||Math.round(window.innerWidth*0.55);
+    // On mobile the board-outer is full-width; on desktop ~60% of viewport
+    const isMobile=window.innerWidth<=820;
+    const containerW=wrap.clientWidth||(isMobile?window.innerWidth-28:Math.round(window.innerWidth*0.55));
     const estCell=Math.floor((containerW-12-3*(dim-1))/dim);
     const fontSize=Math.max(10,Math.min(22,Math.round(estCell*0.48)))+'px';
 
