@@ -351,7 +351,6 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
         <hr/>
         <div class="row" style="margin:8px 0">
           <button id="validateBtn" class="good">Validate</button>
-          <button id="hintBtn">Hint</button>
           <button id="newRollBtn">New Roll</button>
         </div>
         <div id="classicPanel">
@@ -1039,7 +1038,6 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
     $('hintBox').textContent=''; $('hintCount').textContent='0';
     $('statusBar').classList.add('hidden');
     const ch=state.challenge.active;
-    $('hintBtn').classList.toggle('hidden',ch);
     $('newRollBtn').classList.toggle('hidden',ch||state.mode!=='classic');
     $('classicPanel').classList.toggle('hidden',ch);
     $('challengePanel').classList.toggle('hidden',!ch);
@@ -1501,7 +1499,6 @@ body.snes .cell.typing-cursor{outline-color:var(--snes-hi);box-shadow:0 0 8px va
     $('menuBtn').onclick=showMenu;
     $('clearBtn').onclick=clearBoard;
     $('validateBtn').onclick=validate;
-    $('hintBtn').onclick=getHint;
     $('newRollBtn').onclick=newRoll;
     $('shuffleBtn').onclick=shuffleTray;
     $('enterMyRollBtn').onclick=()=>{
